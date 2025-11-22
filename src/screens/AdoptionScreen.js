@@ -1,38 +1,35 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, FlatList, Image, SafeAreaView, ActivityIndicator } from 'react-native';
-import { db } from '../../firebase'; // Import your database config
+import { StyleSheet, Text, View, FlatList, Image, SafeAreaView, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { db } from '../../firebase'; 
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 
-export default function AdoptionScreen() {
+export default function AdoptionScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
-  const [animals, setAnimals] = useState([]); // State to hold the animal list
+  const [animals, setAnimals] = useState([]);
 
-  // This useEffect runs once to fetch the data
   useEffect(() => {
-    // Create a query to get animals, ordered by when they were added
     const q = query(collection(db, 'animals'), orderBy('addedAt', 'desc'));
 
-    // onSnapshot is a real-time listener
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const animalsData = [];
       querySnapshot.forEach((doc) => {
-        // Get the data and add the document ID
         animalsData.push({ ...doc.data(), id: doc.id });
       });
-      setAnimals(animalsData); // Update our state
+      setAnimals(animalsData);
       setLoading(false);
     }, (error) => {
       console.error("Error fetching animals: ", error);
       setLoading(false);
     });
 
-    // Cleanup: stop listening when the component unmounts
     return () => unsubscribe();
-  }, []); // The empty [] means this runs only once
+  }, []);
 
-  // A simple component to render each animal
   const renderAnimal = ({ item }) => (
-    <View style={styles.animalItem}>
+    <TouchableOpacity 
+      style={styles.animalItem} 
+      onPress={() => navigation.navigate('AnimalDetails', { animal: item })}
+    >
       {item.imageUrl && (
         <Image 
           source={{ uri: item.imageUrl }} 
@@ -43,12 +40,11 @@ export default function AdoptionScreen() {
         <Text style={styles.animalName}>{item.name}</Text>
         <Text>{item.species} - Status: {item.status}</Text>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>Animals for Adoption</Text>
       {loading ? (
         <ActivityIndicator size="large" color="#0000ff" />
       ) : (
@@ -62,18 +58,10 @@ export default function AdoptionScreen() {
   );
 }
 
-// This is the CSS for React Native
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-    marginTop: 50, // Add margin for the top status bar
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 20,
   },
   animalItem: {
     flexDirection: 'row',

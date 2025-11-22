@@ -1,10 +1,10 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Ionicons } from '@expo/vector-icons'; // For the tab icons
+import { Ionicons } from '@expo/vector-icons'; 
 
-// Import your new screens
-import AdoptionScreen from './src/screens/AdoptionScreen';
+// IMPORTANT: Import the STACK, not the Screen
+import AdoptionStack from './src/navigation/AdoptionStack'; 
 import ReportScreen from './src/screens/ReportScreen';
 
 const Tab = createBottomTabNavigator();
@@ -23,16 +23,15 @@ export default function App() {
               iconName = focused ? 'alert-circle' : 'alert-circle-outline';
             }
 
-            // You can return any component that you like here!
             return <Ionicons name={iconName} size={size} color={color} />;
           },
           tabBarActiveTintColor: 'tomato',
           tabBarInactiveTintColor: 'gray',
-          headerShown: false, // We hide the header since our screens have their own
+          headerShown: false, 
         })}
       >
-        {/* Define your two tabs */}
-        <Tab.Screen name="Adopt" component={AdoptionScreen} />
+        {/* IMPORTANT: The component here MUST be AdoptionStack */}
+        <Tab.Screen name="Adopt" component={AdoptionStack} />
         <Tab.Screen name="Report" component={ReportScreen} />
       </Tab.Navigator>
     </NavigationContainer>

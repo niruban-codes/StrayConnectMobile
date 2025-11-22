@@ -1,25 +1,22 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TextInput, Button, Image, Alert, ScrollView } from 'react-native';
-import * as ImagePicker from 'expo-image-picker'; // 1. Import Image Picker
-import axios from 'axios'; // 2. Import axios
-import { db } from '../../firebase'; // 3. Import Firebase
+import * as ImagePicker from 'expo-image-picker';
+import axios from 'axios';
+import { db } from '../../firebase';
 import { collection, addDoc } from 'firebase/firestore';
 
-// --- Get your Cloudinary keys from your web project's .env.local file! ---
-// We are putting them here temporarily.
-const CLOUDINARY_CLOUD_NAME = "dorhbk11x"; // Your Cloud Name
-const CLOUDINARY_UPLOAD_PRESET = "ml_default"; // Your Upload Preset
+// Your Cloudinary keys
+const CLOUDINARY_CLOUD_NAME = "dorhbk11x"; 
+const CLOUDINARY_UPLOAD_PRESET = "ml_default"; 
 const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
 
 export default function ReportScreen() {
-  // 4. State for all our form fields
   const [species, setSpecies] = useState('');
   const [location, setLocation] = useState('');
   const [description, setDescription] = useState('');
-  const [image, setImage] = useState(null); // Will hold the local image URI
+  const [image, setImage] = useState(null); 
   const [isUploading, setIsUploading] = useState(false);
 
-  // 5. Function to pick an image from the phone's gallery
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -29,11 +26,10 @@ export default function ReportScreen() {
     });
 
     if (!result.canceled) {
-      setImage(result.assets[0].uri); // Save the image's local path
+      setImage(result.assets[0].uri); 
     }
   };
 
-  // 6. The main submit function
   const handleSubmit = async () => {
     if (!species || !location || !image) {
       Alert.alert("Error", "Please fill in all fields and select an image.");
@@ -43,11 +39,11 @@ export default function ReportScreen() {
     setIsUploading(true);
 
     try {
-      // --- Step 1: Upload Image to Cloudinary ---
+      // 1. Upload to Cloudinary
       const formData = new FormData();
       formData.append('file', {
         uri: image,
-        type: 'image/jpeg', // (or image/png)
+        type: 'image/jpeg',
         name: 'upload.jpg',
       });
       formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
@@ -60,20 +56,19 @@ export default function ReportScreen() {
 
       const imageUrl = cloudinaryResponse.data.secure_url;
 
-      // --- Step 2: Save Report to Firestore ---
-      await addDoc(collection(db, 'reports'), { // A new "reports" collection
+      // 2. Save to Firestore
+      await addDoc(collection(db, 'reports'), { 
         species: species,
         location: location,
         description: description,
         imageUrl: imageUrl,
-        status: 'new', // Default status for new reports
+        status: 'new',
         reportedAt: new Date(),
       });
 
-      // --- Step 3: Success! ---
       setIsUploading(false);
       Alert.alert("Success", "Report submitted successfully!");
-      // Clear the form
+      
       setSpecies('');
       setLocation('');
       setDescription('');
@@ -90,7 +85,7 @@ export default function ReportScreen() {
     <SafeAreaView style={styles.container}>
       <ScrollView>
         <Text style={styles.title}>Report an Animal</Text>
-
+        
         <View style={styles.form}>
           <Text style={styles.label}>Species (e.g., Dog, Cat)</Text>
           <TextInput
@@ -115,7 +110,7 @@ export default function ReportScreen() {
           />
 
           <Button title="Pick an image from gallery" onPress={pickImage} />
-
+          
           {image && (
             <Image source={{ uri: image }} style={styles.imagePreview} />
           )}
@@ -131,7 +126,6 @@ export default function ReportScreen() {
   );
 }
 
-// 7. All the styles for our form
 const styles = StyleSheet.create({
   container: {
     flex: 1,
