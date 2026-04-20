@@ -1,3 +1,4 @@
+// src/screens/ReportScreen.js
 import React, { useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
@@ -6,7 +7,8 @@ import {
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { db } from '../../firebase';
+// UPDATE: Imported 'auth' alongside 'db'
+import { db, auth } from '../../firebase';
 import { collection, addDoc } from 'firebase/firestore';
 import axios from 'axios';
 
@@ -72,16 +74,13 @@ export default function ReportScreen() {
   };
 
   const uploadToCloudinary = async (uri) => {
-    // Hardcode your exact credentials, just like we did on the React Web Dashboard
     const cloudName = "dorhbk11x"; 
     const uploadPreset = "strayconnect_uploads"; 
 
     const formData = new FormData();
-    // In React Native, the file object needs uri, type, and name
     formData.append('file', { uri, type: 'image/jpeg', name: 'report.jpg' });
     formData.append('upload_preset', uploadPreset);
     
-    // Fixed the variable name in the URL to use ${cloudName}
     const res = await axios.post(
       `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
       formData,
@@ -91,6 +90,16 @@ export default function ReportScreen() {
   };
 
   const handleSubmit = async () => {
+    // 🔒 THE GATEKEEPER: Check if the user is verified first
+    const currentUser = auth.currentUser;
+    if (!currentUser || !currentUser.emailVerified) {
+      Alert.alert(
+        'Verification Required', 
+        'Please verify your email address before submitting an incident report. Check your Profile tab to resend the link if needed.'
+      );
+      return; // Stops the function from running!
+    }
+
     if (!location.trim()) {
       Alert.alert('Missing info', 'Please enter a location.'); return;
     }
@@ -112,7 +121,7 @@ export default function ReportScreen() {
         imageUrl: uploadedUrls[0],
         status: 'pending',
         createdAt: new Date(),
-        createdBy: 'mobile',
+        createdBy: currentUser.uid, // Also saving WHO made the report!
       });
 
       Alert.alert(
