@@ -5,8 +5,7 @@ import {
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { db } from '../../firebase';
-import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
-
+import { collection, query, limit, onSnapshot, where } from 'firebase/firestore';
 const COLORS = {
   primary: '#154212',
   primaryContainer: '#2d5a27',
@@ -30,7 +29,7 @@ export default function HomeScreen({ navigation }) {
   useEffect(() => {
     const q = query(
       collection(db, 'animals'),
-      orderBy('addedAt', 'desc'),
+      where('status', 'in', ['stray', 'sheltered']),
       limit(6)
     );
     const unsubscribe = onSnapshot(q, (snapshot) => {

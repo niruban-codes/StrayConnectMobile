@@ -1,14 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, FlatList, Image, SafeAreaView, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { db } from '../../firebase'; 
-import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, where } from 'firebase/firestore';
 
 export default function AdoptionScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [animals, setAnimals] = useState([]);
 
   useEffect(() => {
-    const q = query(collection(db, 'animals'), orderBy('addedAt', 'desc'));
+  
+// ... inside your useEffect
+const q = query(
+  collection(db, 'animals'), 
+  where('status', 'in', ['stray', 'sheltered'])
+);
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const animalsData = [];

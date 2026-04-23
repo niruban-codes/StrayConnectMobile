@@ -6,8 +6,7 @@ import {
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { db } from '../../firebase';
-import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
-
+import { collection, onSnapshot, query, orderBy, where } from 'firebase/firestore';
 const COLORS = {
   primary: '#154212',
   background: '#faf9f6',
@@ -38,7 +37,10 @@ export default function AnimalGalleryScreen({ navigation }) {
   const [activeFilter, setActiveFilter] = useState('All');
 
   useEffect(() => {
-    const q = query(collection(db, 'animals'), orderBy('addedAt', 'desc'));
+    const q = query(
+  collection(db, 'animals'), 
+  where('status', 'in', ['stray', 'sheltered'])
+);
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setAnimals(snapshot.docs.map(d => ({ ...d.data(), id: d.id })));
       setLoading(false);
