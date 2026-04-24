@@ -46,10 +46,17 @@ export default function AnimalDetailScreen({ route, navigation }) {
   const [submitting, setSubmitting] = useState(false);
 
   const handleContact = () => {
-    if (animal.shelter?.contactNumber) {
+    // 1. If it's a lost pet, call the owner!
+    if (animal.status === 'lost' && animal.ownerContact) {
+      Linking.openURL(`tel:${animal.ownerContact}`);
+    } 
+    // 2. Otherwise, if it's in a shelter, call the shelter!
+    else if (animal.shelter?.contactNumber) {
       Linking.openURL(`tel:${animal.shelter.contactNumber}`);
-    } else {
-      Alert.alert('No contact', 'No shelter contact number available for this animal.');
+    } 
+    // 3. Fallback
+    else {
+      Alert.alert('No contact', 'No contact number available for this animal.');
     }
   };
 
@@ -341,12 +348,23 @@ export default function AnimalDetailScreen({ route, navigation }) {
           <Text style={styles.secondaryBtnText}>Contact</Text>
         </TouchableOpacity>
 
-        {/* NEW: Conditional logic for the Adopt Button */}
+        {/* CONDITIONAL LOGIC FOR THE MAIN BUTTON */}
         {animal.status === 'owned' ? (
+          // 1. Owned Pets (Not missing, not for adoption)
           <View style={[styles.primaryBtn, { backgroundColor: '#e9e8e5', shadowOpacity: 0 }]}>
             <Text style={[styles.primaryBtnText, { color: '#72796e' }]}>Not for Adoption</Text>
           </View>
+        ) : animal.status === 'lost' ? (
+          // 2. Missing Pets (SOS Mode!)
+          <TouchableOpacity 
+            style={[styles.primaryBtn, { backgroundColor: COLORS.error, shadowColor: COLORS.error }]} 
+            onPress={() => Alert.alert("Report Sighting", "We will build the Map & Sighting feature in Sprint 3!")}
+          >
+            <MaterialCommunityIcons name="map-marker-radius" size={18} color="#fff" style={{ position: 'absolute', left: 20 }} />
+            <Text style={styles.primaryBtnText}>I Found This Pet</Text>
+          </TouchableOpacity>
         ) : (
+          // 3. Adoptable Pets (Stray / Sheltered)
           <TouchableOpacity 
             style={[styles.primaryBtn, animal.status === 'adopted' && { opacity: 0.5 }]} 
             onPress={handleAdoptPress}

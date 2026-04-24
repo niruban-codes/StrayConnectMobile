@@ -29,7 +29,7 @@ export default function HomeScreen({ navigation }) {
   useEffect(() => {
     const q = query(
       collection(db, 'animals'),
-      where('status', 'in', ['stray', 'sheltered']),
+      where('status', 'in', ['stray', 'sheltered','lost']),
       limit(6)
     );
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -42,6 +42,7 @@ export default function HomeScreen({ navigation }) {
     switch (status) {
       case 'adopted':   return { bg: '#bcf0ae', text: '#002201' };
       case 'sheltered': return { bg: '#ccebc7', text: '#506b4f' };
+      case 'lost':      return { bg: '#ffdad6', text: '#ba1a1a' };
       default:          return { bg: '#ffddb2', text: '#624000' };
     }
   };

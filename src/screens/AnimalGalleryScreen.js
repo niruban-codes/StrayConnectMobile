@@ -26,6 +26,7 @@ const statusStyle = (status) => {
   switch (status) {
     case 'adopted':   return { bg: '#bcf0ae', text: '#002201', label: 'Adopted' };
     case 'sheltered': return { bg: '#ccebc7', text: '#506b4f', label: 'Sheltered' };
+    case 'lost':      return { bg: '#ffdad6', text: '#ba1a1a', label: 'Missing SOS' };
     default:          return { bg: '#ffddb2', text: '#624000', label: 'Stray' };
   }
 };
@@ -39,7 +40,7 @@ export default function AnimalGalleryScreen({ navigation }) {
   useEffect(() => {
     const q = query(
   collection(db, 'animals'), 
-  where('status', 'in', ['stray', 'sheltered'])
+  where('status', 'in', ['stray', 'sheltered', 'lost'])
 );
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setAnimals(snapshot.docs.map(d => ({ ...d.data(), id: d.id })));
@@ -58,7 +59,8 @@ export default function AnimalGalleryScreen({ navigation }) {
         case 'Dogs':      return a.species?.toLowerCase() === 'dog';
         case 'Cats':      return a.species?.toLowerCase() === 'cat';
         case 'Adoptable': return a.status === 'sheltered' || a.status === 'stray';
-        case 'Lost & Found': return a.status === 'stray';
+        // NEW: Show both strays AND lost owned pets here!
+        case 'Lost & Found': return a.status === 'stray' || a.status === 'lost'; 
         default:          return true;
       }
     })();

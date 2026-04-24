@@ -11,8 +11,7 @@ import { auth } from './firebase';
 import HomeScreen from './src/screens/HomeScreen';
 import BrowseStack from './src/navigation/BrowseStack';
 import ReportScreen from './src/screens/ReportScreen';
-import ProfileScreen from './src/screens/ProfileScreen';
-
+import ProfileStack from './src/navigation/ProfileStack';
 // Auth Screens
 import WelcomeScreen from './src/screens/WelcomeScreen';
 import LoginScreen from './src/screens/LoginScreen';
@@ -83,7 +82,7 @@ export default function App() {
           <Tab.Screen name="Home"    component={HomeScreen} />
           <Tab.Screen name="Browse"  component={BrowseStack} />
           <Tab.Screen name="Report"  component={ReportScreen} />
-          <Tab.Screen name="Profile" component={ProfileScreen} />
+          <Tab.Screen name="Profile" component={ProfileStack} />
         </Tab.Navigator>
       ) : (
         // User is Not Logged In -> Show Auth Flow
