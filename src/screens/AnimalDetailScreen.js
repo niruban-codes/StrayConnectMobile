@@ -358,7 +358,7 @@ export default function AnimalDetailScreen({ route, navigation }) {
           // 2. Missing Pets (SOS Mode!)
           <TouchableOpacity 
             style={[styles.primaryBtn, { backgroundColor: COLORS.error, shadowColor: COLORS.error }]} 
-            onPress={() => Alert.alert("Report Sighting", "We will build the Map & Sighting feature in Sprint 3!")}
+            onPress={() => navigation.navigate('SightingMap', { animal: animal })}
           >
             <MaterialCommunityIcons name="map-marker-radius" size={18} color="#fff" style={{ position: 'absolute', left: 20 }} />
             <Text style={styles.primaryBtnText}>I Found This Pet</Text>
