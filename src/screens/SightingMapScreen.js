@@ -49,15 +49,34 @@ export default function SightingMapScreen({ route, navigation }) {
     setSubmitting(true);
     try {
       const currentUser = auth.currentUser;
-      const sightingsRef = collection(db, 'animals', animal.id, 'sightings');
       
-      await addDoc(sightingsRef, {
+      // 1. Save the sighting to the animal's sub-collection
+      const sightingsRef = collection(db, 'animals', animal.id, 'sightings');
+      const newSighting = await addDoc(sightingsRef, {
         latitude: selectedLocation.latitude,
         longitude: selectedLocation.longitude,
         reportedBy: currentUser ? currentUser.uid : 'anonymous',
         reporterEmail: currentUser ? currentUser.email : 'anonymous',
         timestamp: serverTimestamp(),
       });
+
+      // 2. NEW: Send an In-App Notification to the Owner
+      // We check if the animal has an ownerId attached to it
+      if (animal.ownerId) {
+        const notificationsRef = collection(db, 'notifications');
+        await addDoc(notificationsRef, {
+          userId: animal.ownerId, // This makes sure it goes to the exact right person!
+          type: 'sighting',
+          title: `New Sighting: ${animal.name}!`,
+          message: `Someone just dropped a pin where they saw ${animal.name}.`,
+          animalId: animal.id,
+          sightingId: newSighting.id,
+          latitude: selectedLocation.latitude,
+          longitude: selectedLocation.longitude,
+          isRead: false,
+          createdAt: serverTimestamp(),
+        });
+      }
 
       Alert.alert(
         "Sighting Logged! 📍", 
@@ -70,7 +89,7 @@ export default function SightingMapScreen({ route, navigation }) {
       setSubmitting(false);
     }
   };
-
+  
   return (
     <SafeAreaView style={styles.safe}>
       {/* Header */}

@@ -57,7 +57,7 @@ export default function HomeScreen({ navigation }) {
           <MaterialCommunityIcons name="paw" size={26} color={COLORS.primary} />
           <Text style={styles.logo}>StrayConnect</Text>
         </View>
-        <TouchableOpacity style={styles.notifBtn}>
+        <TouchableOpacity style={styles.notifBtn} onPress={() => navigation.navigate('Notifications')}>
           <MaterialCommunityIcons name="bell-outline" size={22} color={COLORS.primary} />
         </TouchableOpacity>
       </View>

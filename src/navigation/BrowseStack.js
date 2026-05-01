@@ -3,6 +3,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import AnimalGalleryScreen from '../screens/AnimalGalleryScreen';
 import AnimalDetailScreen from '../screens/AnimalDetailScreen';
 import SightingMapScreen from '../screens/SightingMapScreen';
+import NotificationsScreen from '../screens/NotificationsScreen';
 
 const Stack = createStackNavigator();
 
@@ -12,6 +13,7 @@ export default function BrowseStack() {
       <Stack.Screen name="AnimalGallery" component={AnimalGalleryScreen} />
       <Stack.Screen name="AnimalDetail" component={AnimalDetailScreen} />
       <Stack.Screen name="SightingMap" component={SightingMapScreen} />
+      <Stack.Screen name="Notifications" component={NotificationsScreen}/>
     </Stack.Navigator>
   );
 }

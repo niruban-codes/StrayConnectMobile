@@ -9,9 +9,12 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from './firebase';
 
 import HomeScreen from './src/screens/HomeScreen';
+// NEW: Import the Notifications Screen
+import NotificationsScreen from './src/screens/NotificationsScreen'; 
 import BrowseStack from './src/navigation/BrowseStack';
 import ReportScreen from './src/screens/ReportScreen';
 import ProfileStack from './src/navigation/ProfileStack';
+
 // Auth Screens
 import WelcomeScreen from './src/screens/WelcomeScreen';
 import LoginScreen from './src/screens/LoginScreen';
@@ -19,10 +22,22 @@ import SignupScreen from './src/screens/SignupScreen';
 
 const Tab = createBottomTabNavigator();
 const AuthStack = createStackNavigator();
+// NEW: Create a Stack specifically for the Home Tab
+const HomeStackNav = createStackNavigator(); 
 
 const PRIMARY = '#154212';
 const INACTIVE = '#94a3b8';
 const TAB_BG = '#ffffff';
+
+// NEW: Define the HomeStack Component
+function HomeStack() {
+  return (
+    <HomeStackNav.Navigator screenOptions={{ headerShown: false }}>
+      <HomeStackNav.Screen name="HomeMain" component={HomeScreen} />
+      <HomeStackNav.Screen name="Notifications" component={NotificationsScreen} />
+    </HomeStackNav.Navigator>
+  );
+}
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -79,7 +94,8 @@ export default function App() {
             },
           })}
         >
-          <Tab.Screen name="Home"    component={HomeScreen} />
+          {/* UPDATED: Change component={HomeScreen} to component={HomeStack} */}
+          <Tab.Screen name="Home"    component={HomeStack} />
           <Tab.Screen name="Browse"  component={BrowseStack} />
           <Tab.Screen name="Report"  component={ReportScreen} />
           <Tab.Screen name="Profile" component={ProfileStack} />
