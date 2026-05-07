@@ -112,7 +112,11 @@ export default function AnimalDetailScreen({ route, navigation }) {
 
       setIsModalVisible(false);
       setMessage(''); // clear form
-      Alert.alert('Application Sent! 🎉', `Your adoption inquiry for ${animal.name} has been securely sent to the sanctuary.`);
+      Alert.alert(
+        'Application Sent! 🐾', 
+        `The sanctuary has received your inquiry for ${animal.name}. \n\nPlease visit the shelter within the next 48 hours or call them at ${animal.shelter?.contactNumber || 'their main office'} to arrange an adoption interview.`,
+        [{ text: 'I will do that!' }]
+      );
     } catch (error) {
       Alert.alert('Error', 'Failed to submit application: ' + error.message);
     } finally {

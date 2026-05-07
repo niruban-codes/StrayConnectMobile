@@ -25,6 +25,7 @@ export default function RegisterPetScreen({ navigation }) {
   const [age, setAge] = useState('');
   const [sex, setSex] = useState('Male');
   const [contact, setContact] = useState('');
+  const [location, setLocation] = useState(''); // NEW: Location state added
   const [imageUri, setImageUri] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -34,7 +35,7 @@ export default function RegisterPetScreen({ navigation }) {
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [4, 3],
-      quality: 0.5, // Compress slightly for faster uploads
+      quality: 0.5, 
     });
 
     if (!result.canceled) {
@@ -44,8 +45,8 @@ export default function RegisterPetScreen({ navigation }) {
 
   // 🚀 2. Submit to Cloudinary & Firestore
   const handleRegister = async () => {
-    if (!name || !imageUri) {
-      Alert.alert('Missing Info', 'Please provide your pet\'s name and a photo.');
+    if (!name || !imageUri || !location) {
+      Alert.alert('Missing Info', 'Please provide your pet\'s name, location, and a photo.');
       return;
     }
 
@@ -54,7 +55,6 @@ export default function RegisterPetScreen({ navigation }) {
       const currentUser = auth.currentUser;
       if (!currentUser) throw new Error("You must be logged in.");
 
-      // A. Upload Image to Cloudinary (Using your existing web credentials)
       const data = new FormData();
       data.append('file', {
         uri: imageUri,
@@ -84,6 +84,7 @@ export default function RegisterPetScreen({ navigation }) {
         sex: sex.toLowerCase(),
         imageUrl: uploadResult.secure_url,
         ownerContact: contact,
+        location: location, // NEW: Saves location to database
         
         // THE TRUST PIPELINE:
         status: 'owned',           // Prevents adoption routing
@@ -147,7 +148,7 @@ export default function RegisterPetScreen({ navigation }) {
           <Text style={styles.label}>Pet Name</Text>
           <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="e.g., Bella" placeholderTextColor={COLORS.outlineVariant} />
         </View>
-        {/* New Contact Field */}
+
         <View style={styles.formGroup}>
           <Text style={styles.label}>Emergency Contact Number</Text>
           <TextInput 
@@ -160,7 +161,18 @@ export default function RegisterPetScreen({ navigation }) {
           />
         </View>
 
-        {/* NEW EXPANDED SPECIES BLOCK */}
+        {/* NEW: Location Field */}
+        <View style={styles.formGroup}>
+          <Text style={styles.label}>City / Area</Text>
+          <TextInput 
+            style={styles.input} 
+            value={location} 
+            onChangeText={setLocation} 
+            placeholder="e.g., Colombo 07" 
+            placeholderTextColor={COLORS.outlineVariant} 
+          />
+        </View>
+
         <View style={styles.formGroup}>
           <Text style={styles.label}>Species</Text>
           <View style={[styles.pillRow, { flexWrap: 'wrap' }]}>

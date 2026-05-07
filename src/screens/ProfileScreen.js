@@ -248,15 +248,31 @@ export default function ProfileScreen({ navigation }) {
 
               {/* Action Hub */}
               <View style={styles.actionHub}>
-                <TouchableOpacity style={styles.actionBtn}>
+                
+                {/* 🚀 NEW: Jump to Browse tab, then to AnimalDetail! */}
+                <TouchableOpacity 
+                  style={styles.actionBtn}
+                  onPress={() => navigation.navigate('Browse', { 
+                    screen: 'AnimalDetail', 
+                    params: { animal: pet } 
+                  })}
+                >
                   <MaterialCommunityIcons name="medical-bag" size={18} color={COLORS.primary} />
                   <Text style={styles.actionBtnText}>Medical</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.actionBtn}>
+                
+                <TouchableOpacity 
+                  style={styles.actionBtn}
+                  onPress={() => navigation.navigate('Browse', { 
+                    screen: 'AnimalDetail', 
+                    params: { animal: pet } 
+                  })}
+                >
                   <MaterialCommunityIcons name="needle" size={18} color={COLORS.primary} />
                   <Text style={styles.actionBtnText}>Vaccines</Text>
                 </TouchableOpacity>
-                {/* Dynamic Missing / Found Toggle */}
+
+                {/* Dynamic Missing / Found Toggle (Unchanged) */}
                 {pet.status === 'lost' ? (
                   <TouchableOpacity 
                     style={[styles.actionBtn, { backgroundColor: '#e8f5e9' }]}
