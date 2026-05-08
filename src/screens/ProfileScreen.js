@@ -4,7 +4,8 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, Sta
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { signOut, sendEmailVerification } from 'firebase/auth';
 import { db, auth } from '../../firebase';
-import { collection, query, orderBy, onSnapshot, where, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, where, doc, updateDoc, or } from 'firebase/firestore';
+
 const COLORS = {
   primary: '#154212',
   primaryFixed: '#bcf0ae',
@@ -18,10 +19,12 @@ const COLORS = {
   blue: '#2563eb',
 };
 
+// 🚀 UPDATED: Distinct colors for Reviewing vs In Progress
 const statusStyle = (status) => {
   switch (status) {
-    case 'resolved':    return { bg: '#bcf0ae', text: '#002201', label: 'Resolved' };
-    case 'reviewing':   return { bg: '#dbe1ff', text: '#003ea8', label: 'Under Review' };
+    case 'resolved':    return { bg: '#bcf0ae', text: '#154212', label: 'Resolved' };
+    case 'reviewing':   return { bg: '#e0e7ff', text: '#3730a3', label: 'Under Review' };
+    case 'in_progress': return { bg: '#dbe1ff', text: '#003ea8', label: 'In Progress' };
     default:            return { bg: '#fef3c7', text: '#d97706', label: 'Pending' };
   }
 };
@@ -30,7 +33,6 @@ export default function ProfileScreen({ navigation }) {
   const [reports, setReports] = useState([]);
   const [animalCount, setAnimalCount] = useState(0);
   
-  // NEW: State for User's Pets
   const [userPets, setUserPets] = useState([]);
   const [loadingPets, setLoadingPets] = useState(true);
   
@@ -40,19 +42,25 @@ export default function ProfileScreen({ navigation }) {
   useEffect(() => {
     if (!user) return;
 
-    // 1. Fetch Reports
-    const reportsQuery = query(collection(db, 'reports'), orderBy('createdAt', 'desc'));
+    const reportsQuery = query(
+      collection(db, 'reports'),
+      or(
+        where('createdBy', '==', user.uid),
+        where('helperId', '==', user.uid)
+      )
+    );
+    
     const unsubReports = onSnapshot(reportsQuery, (snap) => {
-      setReports(snap.docs.slice(0, 5).map(d => ({ ...d.data(), id: d.id })));
+      const fetchedReports = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+      fetchedReports.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+      setReports(fetchedReports);
     });
 
-    // 2. Fetch Global Animal Count
     const animalsQuery = query(collection(db, 'animals'));
     const unsubAnimals = onSnapshot(animalsQuery, (snap) => {
       setAnimalCount(snap.size);
     });
 
-    // 3. NEW: Fetch ONLY this user's registered pets
     const petsQuery = query(collection(db, 'animals'), where('ownerId', '==', user.uid));
     const unsubPets = onSnapshot(petsQuery, (snap) => {
       setUserPets(snap.docs.map(d => ({ ...d.data(), id: d.id })));
@@ -62,7 +70,6 @@ export default function ProfileScreen({ navigation }) {
     return () => { unsubReports(); unsubAnimals(); unsubPets(); };
   }, [user]);
 
-  // 🚨 REPORT MISSING LOGIC
   const handleReportMissing = (pet) => {
     Alert.alert(
       "Report Missing Pet",
@@ -89,7 +96,6 @@ export default function ProfileScreen({ navigation }) {
     );
   };
 
-  // 🏡 MARK FOUND LOGIC
   const handleMarkFound = (pet) => {
     Alert.alert(
       "Cancel SOS",
@@ -146,7 +152,6 @@ export default function ProfileScreen({ navigation }) {
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         
-        {/* Profile Section (Kept from your original code!) */}
         <View style={styles.profileSection}>
           <View style={styles.avatarContainer}>
             <View style={styles.avatar}>
@@ -194,7 +199,6 @@ export default function ProfileScreen({ navigation }) {
           </View>
         </View>
 
-        {/* 🚀 NEW: DIGITAL PASSPORTS SECTION */}
         <View style={styles.sectionHeaderRow}>
           <Text style={styles.sectionTitle}>My Digital Passports</Text>
           <TouchableOpacity 
@@ -231,7 +235,6 @@ export default function ProfileScreen({ navigation }) {
                     {pet.species} • {pet.breed} • {pet.age ? `${pet.age} yrs` : 'Age unknown'}
                   </Text>
                   
-                  {/* Trust Pipeline Badge */}
                   {pet.isVerified ? (
                     <View style={[styles.trustBadge, { backgroundColor: '#dbe1ff' }]}>
                       <MaterialCommunityIcons name="shield-check" size={12} color={COLORS.blue} />
@@ -246,10 +249,7 @@ export default function ProfileScreen({ navigation }) {
                 </View>
               </View>
 
-              {/* Action Hub */}
               <View style={styles.actionHub}>
-                
-                {/* 🚀 NEW: Jump to Browse tab, then to AnimalDetail! */}
                 <TouchableOpacity 
                   style={styles.actionBtn}
                   onPress={() => navigation.navigate('Browse', { 
@@ -272,7 +272,6 @@ export default function ProfileScreen({ navigation }) {
                   <Text style={styles.actionBtnText}>Vaccines</Text>
                 </TouchableOpacity>
 
-                {/* Dynamic Missing / Found Toggle (Unchanged) */}
                 {pet.status === 'lost' ? (
                   <TouchableOpacity 
                     style={[styles.actionBtn, { backgroundColor: '#e8f5e9' }]}
@@ -297,39 +296,49 @@ export default function ProfileScreen({ navigation }) {
 
         <View style={{ height: 20 }} />
 
-        {/* Recent Reports (Kept from your original code!) */}
-        <Text style={styles.sectionTitle}>My Reports</Text>
+        <Text style={styles.sectionTitle}>My Reports & Tasks</Text>
         {reports.length === 0 ? (
           <View style={styles.emptyState}>
             <MaterialCommunityIcons name="clipboard-text-outline" size={36} color={COLORS.outlineVariant} />
-            <Text style={styles.emptyText}>No reports submitted yet</Text>
-            <Text style={styles.emptySubtext}>Reports you submit will appear here</Text>
+            <Text style={styles.emptyText}>No active reports</Text>
+            <Text style={styles.emptySubtext}>Reports you submit or claim will appear here</Text>
           </View>
         ) : (
           reports.map((report) => {
             const sc = statusStyle(report.status);
+            const isHelper = report.helperId === user.uid;
+
             return (
-              <View key={report.id} style={styles.reportCard}>
-                <View style={styles.reportIconBox}>
+              <TouchableOpacity 
+                key={report.id} 
+                style={styles.reportCard}
+                activeOpacity={0.8}
+                onPress={() => navigation.navigate('SOS Feed', { 
+                  screen: 'AlertDetail', 
+                  params: { alertItem: report } 
+                })}
+              >
+                <View style={[styles.reportIconBox, { backgroundColor: sc.bg }]}>
                   <MaterialCommunityIcons
-                    name={report.incidentType === 'Lost' ? 'map-search-outline' : report.incidentType === 'Abuse' ? 'alert-outline' : 'paw-outline'}
+                    name={isHelper ? 'run-fast' : 'alert-outline'}
                     size={22}
-                    color={COLORS.primary}
+                    color={sc.text}
                   />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.reportTitle}>{report.incidentType || 'Found'} {report.animalType || 'Animal'}</Text>
-                  <Text style={styles.reportMeta}>{report.location || 'Unknown location'}</Text>
+                  <Text style={styles.reportTitle}>
+                    {isHelper ? `Assigned: ${report.incidentType}` : `${report.incidentType} Report`}
+                  </Text>
+                  <Text style={styles.reportMeta} numberOfLines={1}>{report.location}</Text>
                 </View>
                 <View style={[styles.statusBadge, { backgroundColor: sc.bg }]}>
                   <Text style={[styles.statusText, { color: sc.text }]}>{sc.label}</Text>
                 </View>
-              </View>
+              </TouchableOpacity>
             );
           })
         )}
 
-        {/* Sign Out */}
         <TouchableOpacity style={styles.signOutBtn} onPress={handleSignOut} activeOpacity={0.8}>
           <MaterialCommunityIcons name="logout" size={16} color={COLORS.error} />
           <Text style={styles.signOutText}>Sign Out</Text>
@@ -359,8 +368,6 @@ const styles = StyleSheet.create({
   statDivider: { width: 1, backgroundColor: '#c2c9bb', marginVertical: 4 },
   statNumber: { fontSize: 22, fontWeight: '800', color: '#154212' },
   statLabel: { fontSize: 11, color: '#42493e', textAlign: 'center', marginTop: 2 },
-  
-  // NEW PASSPORT STYLES
   sectionHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   sectionTitle: { fontSize: 17, fontWeight: '700', color: '#154212', marginBottom: 12 },
   addBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#154212', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, gap: 4 },
@@ -380,8 +387,6 @@ const styles = StyleSheet.create({
   actionHub: { flexDirection: 'row', gap: 8, borderTopWidth: 1, borderTopColor: '#f4f3f1', paddingTop: 12 },
   actionBtn: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 10, backgroundColor: '#f4f3f1', borderRadius: 10, gap: 4 },
   actionBtnText: { fontSize: 11, fontWeight: '700', color: '#154212' },
-
-  // REPORTS & OTHER STYLES
   reportCard: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: 'rgba(255,255,255,0.6)', borderRadius: 16, padding: 14, marginBottom: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.9)' },
   reportIconBox: { width: 44, height: 44, borderRadius: 14, backgroundColor: '#bcf0ae', alignItems: 'center', justifyContent: 'center' },
   reportTitle: { fontSize: 14, fontWeight: '700', color: '#1a1c1a', marginBottom: 2, textTransform: 'capitalize' },

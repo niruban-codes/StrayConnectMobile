@@ -6,6 +6,8 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { onAuthStateChanged } from 'firebase/auth';
+import LocalAlertsScreen from './src/screens/LocalAlertsScreen';
+import AlertDetailScreen from './src/screens/AlertDetailScreen';
 
 // IMPORT DB AND EXPO TOOLS HERE
 import { auth, db } from './firebase'; 
@@ -46,6 +48,16 @@ function HomeStack() {
       <HomeStackNav.Screen name="HomeMain" component={HomeScreen} />
       <HomeStackNav.Screen name="Notifications" component={NotificationsScreen} />
     </HomeStackNav.Navigator>
+  );
+}
+const SOSStackNav = createStackNavigator();
+
+function SOSStack() {
+  return (
+    <SOSStackNav.Navigator screenOptions={{ headerShown: false }}>
+      <SOSStackNav.Screen name="LocalAlerts" component={LocalAlertsScreen} />
+      <SOSStackNav.Screen name="AlertDetail" component={AlertDetailScreen} />
+    </SOSStackNav.Navigator>
   );
 }
 
@@ -146,7 +158,8 @@ export default function App() {
               const icons = {
                 Home:    focused ? 'home'              : 'home-outline',
                 Browse:  focused ? 'paw'               : 'paw-outline',
-                Report:  focused ? 'alert-circle'      : 'alert-circle-outline',
+                Report:    focused ? 'plus-circle'       : 'plus-circle-outline',
+                'SOS Feed': focused ? 'radar'            : 'radar',
                 Profile: focused ? 'account-circle'    : 'account-circle-outline',
               };
               return <MaterialCommunityIcons name={icons[route.name]} size={24} color={color} />;
@@ -156,6 +169,11 @@ export default function App() {
           <Tab.Screen name="Home"    component={HomeStack} />
           <Tab.Screen name="Browse"  component={BrowseStack} />
           <Tab.Screen name="Report"  component={ReportScreen} />
+          <Tab.Screen 
+            name="SOS Feed" 
+            component={SOSStack} 
+            options={{ unmountOnBlur: true }} 
+          />
           <Tab.Screen name="Profile" component={ProfileStack} />
         </Tab.Navigator>
       ) : (

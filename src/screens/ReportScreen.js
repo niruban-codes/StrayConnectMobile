@@ -7,7 +7,6 @@ import {
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-// UPDATE: Imported 'auth' alongside 'db'
 import { db, auth } from '../../firebase';
 import { collection, addDoc } from 'firebase/firestore';
 import axios from 'axios';
@@ -25,15 +24,27 @@ const COLORS = {
   errorContainer: '#ffdad6',
 };
 
-const INCIDENT_TYPES = ['Lost', 'Found', 'Abuse'];
+// 🚀 NEW: Highly specific, actionable incident types
+const INCIDENT_TYPES = [
+  'Medical Emergency', 
+  'Accident / Injury', 
+  'Mother & Newborns', 
+  'Starving / Neglect', 
+  'Abuse'
+];
+
+// 🚀 NEW: Expanded animal types
 const ANIMAL_TYPES = [
   { label: 'Dog', icon: 'dog' },
   { label: 'Cat', icon: 'cat' },
+  { label: 'Bird', icon: 'bird' },
+  { label: 'Livestock', icon: 'cow' },
+  { label: 'Wildlife', icon: 'leaf' },
   { label: 'Other', icon: 'paw' },
 ];
 
 export default function ReportScreen() {
-  const [incidentType, setIncidentType] = useState('Found');
+  const [incidentType, setIncidentType] = useState('Medical Emergency');
   const [animalType, setAnimalType] = useState('Dog');
   const [location, setLocation] = useState('');
   const [description, setDescription] = useState('');
@@ -90,14 +101,13 @@ export default function ReportScreen() {
   };
 
   const handleSubmit = async () => {
-    // 🔒 THE GATEKEEPER: Check if the user is verified first
     const currentUser = auth.currentUser;
     if (!currentUser || !currentUser.emailVerified) {
       Alert.alert(
         'Verification Required', 
         'Please verify your email address before submitting an incident report. Check your Profile tab to resend the link if needed.'
       );
-      return; // Stops the function from running!
+      return; 
     }
 
     if (!location.trim()) {
@@ -119,16 +129,16 @@ export default function ReportScreen() {
         contact,
         photoUrls: uploadedUrls,
         imageUrl: uploadedUrls[0],
-        status: 'pending',
+        status: 'pending', // 🚀 Dashboard will change this to 'in_progress' or 'resolved'
         createdAt: new Date(),
-        createdBy: currentUser.uid, // Also saving WHO made the report!
+        createdBy: currentUser.uid, 
       });
 
       Alert.alert(
         '✅ Report Submitted',
-        'Thank you! Your report has been received and will be reviewed within 2 hours.',
+        'Thank you! The sanctuary has been alerted and a team will review the dispatch requirements.',
         [{ text: 'OK', onPress: () => {
-          setIncidentType('Found'); setAnimalType('Dog');
+          setIncidentType('Medical Emergency'); setAnimalType('Dog');
           setLocation(''); setDescription('');
           setContact(''); setPhotos([]);
         }}]
@@ -144,7 +154,6 @@ export default function ReportScreen() {
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
 
-      {/* Header */}
       <View style={styles.header}>
         <MaterialCommunityIcons name="paw" size={22} color={COLORS.primary} />
         <Text style={styles.headerTitle}>Report an Animal</Text>
@@ -158,9 +167,8 @@ export default function ReportScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <Text style={styles.pageTitle}>Report an Animal in Need</Text>
-        <Text style={styles.pageSubtitle}>Provide details to help us locate and assist the stray.</Text>
+        <Text style={styles.pageSubtitle}>Provide details to help us locate and assist the animal safely.</Text>
 
-        {/* Photo Upload */}
         <View style={styles.card}>
           <Text style={styles.cardLabel}>Upload Photos</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -193,7 +201,6 @@ export default function ReportScreen() {
           )}
         </View>
 
-        {/* Incident Type */}
         <View style={styles.card}>
           <Text style={styles.cardLabel}>Incident Type</Text>
           <View style={styles.toggleRow}>
@@ -211,7 +218,6 @@ export default function ReportScreen() {
           </View>
         </View>
 
-        {/* Animal Type */}
         <View style={styles.card}>
           <Text style={styles.cardLabel}>Animal Type</Text>
           <View style={styles.animalTypeRow}>
@@ -234,7 +240,6 @@ export default function ReportScreen() {
           </View>
         </View>
 
-        {/* Location */}
         <View style={styles.card}>
           <Text style={styles.cardLabel}>Location</Text>
           <View style={styles.inputRow}>
@@ -249,7 +254,6 @@ export default function ReportScreen() {
           </View>
         </View>
 
-        {/* Description */}
         <View style={styles.card}>
           <Text style={styles.cardLabel}>Description</Text>
           <TextInput
@@ -264,7 +268,6 @@ export default function ReportScreen() {
           />
         </View>
 
-        {/* Contact */}
         <View style={styles.card}>
           <Text style={styles.cardLabel}>Your Contact Number</Text>
           <View style={styles.inputRow}>
@@ -280,20 +283,18 @@ export default function ReportScreen() {
           </View>
         </View>
 
-        {/* Info Card */}
         <View style={styles.infoCard}>
           <View style={styles.infoIcon}>
-            <MaterialCommunityIcons name="fingerprint" size={22} color="#2563eb" />
+            <MaterialCommunityIcons name="ambulance" size={22} color="#2563eb" />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.infoTitle}>Digital Identity</Text>
+            <Text style={styles.infoTitle}>Rapid Response</Text>
             <Text style={styles.infoText}>
-              Your report helps us assign a unique Digital ID, ensuring this stray receives continuous care and tracking.
+              Your report goes directly to the sanctuary dashboard. Admins can dispatch volunteers or a rescue unit based on severity.
             </Text>
           </View>
         </View>
 
-        {/* Submit */}
         <TouchableOpacity
           style={[styles.submitBtn, submitting && { opacity: 0.7 }]}
           onPress={handleSubmit}
@@ -310,7 +311,7 @@ export default function ReportScreen() {
           )}
         </TouchableOpacity>
 
-        <Text style={styles.submitNote}>Reports are reviewed within 2 hours</Text>
+        <Text style={styles.submitNote}>High-priority cases are reviewed immediately.</Text>
         <View style={{ height: 40 }} />
       </ScrollView>
     </SafeAreaView>
@@ -319,225 +320,39 @@ export default function ReportScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#faf9f6' },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    backgroundColor: 'rgba(250,249,246,0.92)',
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(194,201,187,0.3)',
-  },
-  headerTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#154212',
-  },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 14, backgroundColor: 'rgba(250,249,246,0.92)', borderBottomWidth: 1, borderBottomColor: 'rgba(194,201,187,0.3)' },
+  headerTitle: { fontSize: 16, fontWeight: '700', color: '#154212' },
   scroll: { flex: 1 },
   scrollContent: { padding: 20 },
-  pageTitle: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: '#154212',
-    letterSpacing: -0.5,
-    marginBottom: 6,
-  },
-  pageSubtitle: {
-    fontSize: 14,
-    color: '#42493e',
-    marginBottom: 24,
-  },
-  card: {
-    backgroundColor: '#f4f3f1',
-    borderRadius: 20,
-    padding: 16,
-    marginBottom: 14,
-  },
-  cardLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#1a1c1a',
-    marginBottom: 12,
-  },
-  photoRow: {
-    flexDirection: 'row',
-    gap: 10,
-    paddingBottom: 4,
-  },
-  addPhotoBtn: {
-    width: 80,
-    height: 90,
-    borderRadius: 16,
-    borderWidth: 2,
-    borderStyle: 'dashed',
-    borderColor: '#c2c9bb',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#fff',
-    gap: 4,
-  },
-  addPhotoText: {
-    fontSize: 10,
-    color: '#72796e',
-    fontWeight: '600',
-  },
-  photoThumb: {
-    width: 80,
-    height: 90,
-    borderRadius: 16,
-    backgroundColor: '#e9e8e5',
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
-  },
-  removePhoto: {
-    position: 'absolute',
-    top: -6,
-    right: -6,
-    zIndex: 10,
-    backgroundColor: '#fff',
-    borderRadius: 999,
-  },
-  photoCount: {
-    fontSize: 11,
-    color: '#154212',
-    fontWeight: '600',
-    marginTop: 8,
-  },
-  toggleRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  toggleBtn: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 999,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#c2c9bb',
-  },
-  toggleBtnActive: {
-    backgroundColor: '#154212',
-    borderColor: '#154212',
-  },
-  toggleText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#42493e',
-  },
-  toggleTextActive: {
-    color: '#fff',
-  },
-  animalTypeRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  animalTypeBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 10,
-    borderRadius: 14,
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#c2c9bb',
-  },
-  animalTypeBtnActive: {
-    backgroundColor: '#154212',
-    borderColor: '#154212',
-  },
-  animalTypeText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#42493e',
-  },
+  pageTitle: { fontSize: 26, fontWeight: '800', color: '#154212', letterSpacing: -0.5, marginBottom: 6 },
+  pageSubtitle: { fontSize: 14, color: '#42493e', marginBottom: 24 },
+  card: { backgroundColor: '#f4f3f1', borderRadius: 20, padding: 16, marginBottom: 14 },
+  cardLabel: { fontSize: 13, fontWeight: '600', color: '#1a1c1a', marginBottom: 12 },
+  photoRow: { flexDirection: 'row', gap: 10, paddingBottom: 4 },
+  addPhotoBtn: { width: 80, height: 90, borderRadius: 16, borderWidth: 2, borderStyle: 'dashed', borderColor: '#c2c9bb', alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff', gap: 4 },
+  addPhotoText: { fontSize: 10, color: '#72796e', fontWeight: '600' },
+  photoThumb: { width: 80, height: 90, borderRadius: 16, backgroundColor: '#e9e8e5', alignItems: 'center', justifyContent: 'center', position: 'relative' },
+  removePhoto: { position: 'absolute', top: -6, right: -6, zIndex: 10, backgroundColor: '#fff', borderRadius: 999 },
+  photoCount: { fontSize: 11, color: '#154212', fontWeight: '600', marginTop: 8 },
+  toggleRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  toggleBtn: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 999, backgroundColor: '#fff', alignItems: 'center', borderWidth: 1, borderColor: '#c2c9bb' },
+  toggleBtnActive: { backgroundColor: '#154212', borderColor: '#154212' },
+  toggleText: { fontSize: 13, fontWeight: '600', color: '#42493e' },
+  toggleTextActive: { color: '#fff' },
+  animalTypeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  animalTypeBtn: { paddingHorizontal: 16, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderRadius: 14, backgroundColor: '#fff', borderWidth: 1, borderColor: '#c2c9bb' },
+  animalTypeBtnActive: { backgroundColor: '#154212', borderColor: '#154212' },
+  animalTypeText: { fontSize: 13, fontWeight: '600', color: '#42493e' },
   animalTypeTextActive: { color: '#fff' },
-  inputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 14,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    gap: 8,
-  },
-  input: {
-    flex: 1,
-    fontSize: 14,
-    color: '#1a1c1a',
-  },
-  prefix: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#1a1c1a',
-  },
-  textarea: {
-    backgroundColor: '#fff',
-    borderRadius: 14,
-    padding: 12,
-    fontSize: 14,
-    color: '#1a1c1a',
-    minHeight: 100,
-  },
-  infoCard: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-    backgroundColor: 'rgba(255,255,255,0.6)',
-    borderRadius: 20,
-    padding: 16,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.9)',
-  },
-  infoIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 999,
-    backgroundColor: '#dbe1ff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  infoTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#154212',
-    marginBottom: 4,
-  },
-  infoText: {
-    fontSize: 12,
-    color: '#42493e',
-    lineHeight: 18,
-  },
-  submitBtn: {
-    backgroundColor: '#154212',
-    borderRadius: 999,
-    paddingVertical: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    shadowColor: '#154212',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 5,
-  },
-  submitText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '800',
-  },
-  submitNote: {
-    textAlign: 'center',
-    fontSize: 11,
-    color: '#72796e',
-    marginTop: 10,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
+  inputRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 14, paddingHorizontal: 12, paddingVertical: 12, gap: 8 },
+  input: { flex: 1, fontSize: 14, color: '#1a1c1a' },
+  prefix: { fontSize: 13, fontWeight: '600', color: '#1a1c1a' },
+  textarea: { backgroundColor: '#fff', borderRadius: 14, padding: 12, fontSize: 14, color: '#1a1c1a', minHeight: 100 },
+  infoCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, backgroundColor: 'rgba(255,255,255,0.6)', borderRadius: 20, padding: 16, marginBottom: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.9)' },
+  infoIcon: { width: 40, height: 40, borderRadius: 999, backgroundColor: '#dbe1ff', alignItems: 'center', justifyContent: 'center' },
+  infoTitle: { fontSize: 13, fontWeight: '700', color: '#154212', marginBottom: 4 },
+  infoText: { fontSize: 12, color: '#42493e', lineHeight: 18 },
+  submitBtn: { backgroundColor: '#154212', borderRadius: 999, paddingVertical: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, shadowColor: '#154212', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 10, elevation: 5 },
+  submitText: { color: '#fff', fontSize: 16, fontWeight: '800' },
+  submitNote: { textAlign: 'center', fontSize: 11, color: '#72796e', marginTop: 10, textTransform: 'uppercase', letterSpacing: 0.5 },
 });
