@@ -152,10 +152,9 @@ export default function App() {
               shadowOpacity: 0.06,
               shadowRadius: 12,
               height : 92,
-              paddingBottom: 18,
+              paddingBottom: 10,
               paddingTop: 8,
-              // height: 64,      <-- REMOVE THIS
-              // paddingBottom: 10, <-- REMOVE THIS
+              
             },
             tabBarLabelStyle: { fontSize: 11, fontWeight: '600', marginTop: 2 },
             tabBarIcon: ({ focused, color }) => {
