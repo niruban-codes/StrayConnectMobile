@@ -8,6 +8,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { onAuthStateChanged } from 'firebase/auth';
 import LocalAlertsScreen from './src/screens/LocalAlertsScreen';
 import AlertDetailScreen from './src/screens/AlertDetailScreen';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 // IMPORT DB AND EXPO TOOLS HERE
 import { auth, db } from './firebase'; 
@@ -133,6 +134,7 @@ export default function App() {
 
   // 5. MAIN RENDER
   return (
+    <SafeAreaProvider>
     <NavigationContainer>
       {user ? (
         <Tab.Navigator
@@ -141,7 +143,7 @@ export default function App() {
             tabBarShowLabel: true,
             tabBarActiveTintColor: PRIMARY,
             tabBarInactiveTintColor: INACTIVE,
-            tabBarStyle: {
+           tabBarStyle: {
               backgroundColor: TAB_BG,
               borderTopWidth: 0,
               elevation: 20,
@@ -149,9 +151,11 @@ export default function App() {
               shadowOffset: { width: 0, height: -4 },
               shadowOpacity: 0.06,
               shadowRadius: 12,
-              height: 64,
-              paddingBottom: 10,
+              height : 92,
+              paddingBottom: 18,
               paddingTop: 8,
+              // height: 64,      <-- REMOVE THIS
+              // paddingBottom: 10, <-- REMOVE THIS
             },
             tabBarLabelStyle: { fontSize: 11, fontWeight: '600', marginTop: 2 },
             tabBarIcon: ({ focused, color }) => {
@@ -184,5 +188,6 @@ export default function App() {
         </AuthStack.Navigator>
       )}
     </NavigationContainer>
+    </SafeAreaProvider>
   );
 }

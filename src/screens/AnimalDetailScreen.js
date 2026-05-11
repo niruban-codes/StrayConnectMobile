@@ -2,9 +2,10 @@
 import React, { useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
-  StyleSheet, Image, SafeAreaView, StatusBar,
+  StyleSheet, Image, StatusBar,
   Linking, Alert, Modal, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 // NEW IMPORTS FOR FIREBASE:
 import { db, auth } from '../../firebase';

@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
-  StyleSheet, Image, FlatList, SafeAreaView, StatusBar
+  StyleSheet, Image, FlatList, StatusBar
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { db } from '../../firebase';
 import { collection, query, limit, onSnapshot, where } from 'firebase/firestore';
