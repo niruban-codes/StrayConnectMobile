@@ -7,7 +7,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-// NEW IMPORTS FOR FIREBASE:
 import { db, auth } from '../../firebase';
 import { collection, addDoc } from 'firebase/firestore';
 
@@ -39,7 +38,6 @@ export default function AnimalDetailScreen({ route, navigation }) {
   const [activeTab, setActiveTab] = useState('vaccinations');
   const sc = statusStyle(animal.status);
 
-  // MODAL & FORM STATE
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [livingSituation, setLivingSituation] = useState('Apartment');
   const [experience, setExperience] = useState('First-time owner');
@@ -47,30 +45,25 @@ export default function AnimalDetailScreen({ route, navigation }) {
   const [submitting, setSubmitting] = useState(false);
 
   const handleContact = () => {
-    // 1. If it's a lost pet, call the owner!
     if (animal.status === 'lost' && animal.ownerContact) {
       Linking.openURL(`tel:${animal.ownerContact}`);
     } 
-    // 2. Otherwise, if it's in a shelter, call the shelter!
     else if (animal.shelter?.contactNumber) {
       Linking.openURL(`tel:${animal.shelter.contactNumber}`);
     } 
-    // 3. Fallback
     else {
       Alert.alert('No contact', 'No contact number available for this animal.');
     }
   };
 
-  // 🔒 THE ADOPTION GATEKEEPER
   const handleAdoptPress = () => {
     if (animal.status === 'adopted') {
-      Alert.alert('Already Adopted', `${animal.name} has already found a forever home!`);
+      Alert.alert('Already Adopted', `${animal.name || 'This pet'} has already found a forever home!`);
       return;
     }
     
-    // NEW: Stop adoption for owned pets
     if (animal.status === 'owned') {
-      Alert.alert('Not for Adoption', `${animal.name} is a registered owned pet.`);
+      Alert.alert('Not for Adoption', `${animal.name || 'This pet'} is a registered owned pet.`);
       return;
     }
 
@@ -86,7 +79,6 @@ export default function AnimalDetailScreen({ route, navigation }) {
     setIsModalVisible(true);
   };
 
-  // 📝 SUBMIT APPLICATION TO FIRESTORE
   const submitApplication = async () => {
     if (!message.trim()) {
       Alert.alert('Missing Info', 'Please add a brief message about why you want to adopt.');
@@ -98,8 +90,8 @@ export default function AnimalDetailScreen({ route, navigation }) {
       const currentUser = auth.currentUser;
       
       await addDoc(collection(db, 'adoptionRequests'), {
-        animalId: animal.id || animal.animalId, // The Firestore ID
-        animalName: animal.name,
+        animalId: animal.id || animal.animalId,
+        animalName: animal.name || 'Unnamed Pet', // 🚀 BUG FIX: Fallback name for the database
         animalSCID: animal.animalId || 'No ID',
         userId: currentUser.uid,
         userName: currentUser.displayName || 'Unknown User',
@@ -112,10 +104,10 @@ export default function AnimalDetailScreen({ route, navigation }) {
       });
 
       setIsModalVisible(false);
-      setMessage(''); // clear form
+      setMessage(''); 
       Alert.alert(
         'Application Sent! 🐾', 
-        `The sanctuary has received your inquiry for ${animal.name}. \n\nPlease visit the shelter within the next 48 hours or call them at ${animal.shelter?.contactNumber || 'their main office'} to arrange an adoption interview.`,
+        `The sanctuary has received your inquiry for ${animal.name || 'this pet'}. \n\nPlease visit the shelter within the next 48 hours or call them to arrange an interview.`,
         [{ text: 'I will do that!' }]
       );
     } catch (error) {
@@ -135,7 +127,6 @@ export default function AnimalDetailScreen({ route, navigation }) {
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
 
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <MaterialCommunityIcons name="arrow-left" size={22} color={COLORS.primary} />
@@ -148,7 +139,6 @@ export default function AnimalDetailScreen({ route, navigation }) {
 
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
         
-        {/* Hero Photo */}
         <View style={styles.heroContainer}>
           {animal.imageUrl ? (
             <Image source={{ uri: animal.imageUrl }} style={styles.heroImage} />
@@ -160,7 +150,6 @@ export default function AnimalDetailScreen({ route, navigation }) {
           <View style={styles.heroOverlay} />
         </View>
 
-        {/* Floating ID Card */}
         <View style={styles.floatingCard}>
           <View style={styles.badgeRow}>
             <View style={styles.idBadge}>
@@ -183,12 +172,12 @@ export default function AnimalDetailScreen({ route, navigation }) {
             </View>
           </View>
 
-          <Text style={styles.animalName}>{animal.name}</Text>
+          {/* 🚀 BUG FIX: Display fallback if no name */}
+          <Text style={styles.animalName}>{animal.name || 'Unnamed Pet'}</Text>
           <Text style={styles.animalSubtitle}>
             {animal.species} {animal.breed ? `· ${animal.breed}` : ''} · {animal.sex}
           </Text>
 
-          {/* Stats Grid */}
           <View style={styles.statsGrid}>
             {[
               { label: 'Age', value: animal.age ? `${animal.age} yrs` : 'Unknown', icon: 'calendar-outline' },
@@ -205,7 +194,6 @@ export default function AnimalDetailScreen({ route, navigation }) {
           </View>
         </View>
 
-        {/* Tabs */}
         <View style={styles.tabBar}>
           {TABS.map(tab => (
             <TouchableOpacity
@@ -219,9 +207,7 @@ export default function AnimalDetailScreen({ route, navigation }) {
           ))}
         </View>
 
-        {/* Tab Content */}
         <View style={styles.tabContent}>
-          {/* Vaccinations */}
           {activeTab === 'vaccinations' && (
             <View>
               <Text style={styles.sectionTitle}>💉 Immunization Records</Text>
@@ -256,7 +242,6 @@ export default function AnimalDetailScreen({ route, navigation }) {
             </View>
           )}
 
-          {/* Medical */}
           {activeTab === 'medical' && (
             <View>
               <Text style={styles.sectionTitle}>🏥 Clinical Observations</Text>
@@ -291,7 +276,6 @@ export default function AnimalDetailScreen({ route, navigation }) {
             </View>
           )}
 
-          {/* Shelter */}
           {activeTab === 'shelter' && (
             <View>
               <Text style={styles.sectionTitle}>🏠 Shelter Information</Text>
@@ -320,7 +304,6 @@ export default function AnimalDetailScreen({ route, navigation }) {
           )}
         </View>
 
-        {/* Health Tags */}
         <View style={styles.healthSection}>
           <Text style={styles.sectionTitle}>🏷️ Health Tags</Text>
           <View style={styles.tagRow}>
@@ -346,21 +329,17 @@ export default function AnimalDetailScreen({ route, navigation }) {
         </View>
       </ScrollView>
 
-      {/* Fixed Bottom Actions */}
       <View style={styles.bottomBar}>
         <TouchableOpacity style={styles.secondaryBtn} onPress={handleContact}>
           <MaterialCommunityIcons name="phone-outline" size={18} color={COLORS.primary} />
           <Text style={styles.secondaryBtnText}>Contact</Text>
         </TouchableOpacity>
 
-        {/* CONDITIONAL LOGIC FOR THE MAIN BUTTON */}
         {animal.status === 'owned' ? (
-          // 1. Owned Pets (Not missing, not for adoption)
           <View style={[styles.primaryBtn, { backgroundColor: '#e9e8e5', shadowOpacity: 0 }]}>
             <Text style={[styles.primaryBtnText, { color: '#72796e' }]}>Not for Adoption</Text>
           </View>
         ) : animal.status === 'lost' ? (
-          // 2. Missing Pets (SOS Mode!)
           <TouchableOpacity 
             style={[styles.primaryBtn, { backgroundColor: COLORS.error, shadowColor: COLORS.error }]} 
             onPress={() => navigation.navigate('SightingMap', { animal: animal })}
@@ -369,20 +348,19 @@ export default function AnimalDetailScreen({ route, navigation }) {
             <Text style={styles.primaryBtnText}>I Found This Pet</Text>
           </TouchableOpacity>
         ) : (
-          // 3. Adoptable Pets (Stray / Sheltered)
           <TouchableOpacity 
             style={[styles.primaryBtn, animal.status === 'adopted' && { opacity: 0.5 }]} 
             onPress={handleAdoptPress}
             disabled={animal.status === 'adopted'}
           >
+            {/* 🚀 BUG FIX: Fallback to 'this pet' if name is empty */}
             <Text style={styles.primaryBtnText}>
-              {animal.status === 'adopted' ? '✓ Adopted' : `Adopt ${animal.name}`}
+              {animal.status === 'adopted' ? '✓ Adopted' : `Adopt ${animal.name || 'This Pet'}`}
             </Text>
           </TouchableOpacity>
         )}
       </View>
 
-      {/* 🚀 NEW: ADOPTION INQUIRY MODAL */}
       <Modal visible={isModalVisible} transparent={true} animationType="slide">
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalContainer}>
           <View style={styles.modalContent}>
@@ -395,9 +373,9 @@ export default function AnimalDetailScreen({ route, navigation }) {
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
-              <Text style={styles.modalSubtitle}>Tell us a bit about yourself so the sanctuary can process your application for {animal.name}.</Text>
+              {/* 🚀 BUG FIX: Safe name display in the modal */}
+              <Text style={styles.modalSubtitle}>Tell us a bit about yourself so the sanctuary can process your application for {animal.name || 'this companion'}.</Text>
 
-              {/* Living Situation */}
               <Text style={styles.inputLabel}>Living Situation</Text>
               <View style={styles.pillRow}>
                 {['Apartment', 'House', 'Estate/Farm'].map(opt => (
@@ -411,7 +389,6 @@ export default function AnimalDetailScreen({ route, navigation }) {
                 ))}
               </View>
 
-              {/* Experience Level */}
               <Text style={styles.inputLabel}>Pet Experience</Text>
               <View style={styles.pillRow}>
                 {['First-time owner', 'Have had pets', 'Experienced rescuer'].map(opt => (
@@ -425,8 +402,7 @@ export default function AnimalDetailScreen({ route, navigation }) {
                 ))}
               </View>
 
-              {/* Message */}
-              <Text style={styles.inputLabel}>Why {animal.name}?</Text>
+              <Text style={styles.inputLabel}>Why {animal.name || 'this pet'}?</Text>
               <TextInput
                 style={styles.textArea}
                 placeholder="Share a little about why you'd be a great match..."
@@ -513,8 +489,6 @@ const styles = StyleSheet.create({
   secondaryBtnText: { fontSize: 14, fontWeight: '700', color: '#154212' },
   primaryBtn: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 14, borderRadius: 999, backgroundColor: '#154212', shadowColor: '#154212', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 10, elevation: 5 },
   primaryBtnText: { fontSize: 14, fontWeight: '800', color: '#fff' },
-
-  // NEW MODAL STYLES
   modalContainer: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' },
   modalContent: { backgroundColor: '#faf9f6', borderTopLeftRadius: 32, borderTopRightRadius: 32, padding: 24, paddingBottom: 40, maxHeight: '85%' },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },

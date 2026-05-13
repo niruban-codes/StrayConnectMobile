@@ -21,6 +21,8 @@ import NotificationsScreen from './src/screens/NotificationsScreen';
 import BrowseStack from './src/navigation/BrowseStack';
 import ReportScreen from './src/screens/ReportScreen';
 import ProfileStack from './src/navigation/ProfileStack';
+import ProposeEventScreen from './src/screens/ProposeEventScreen';
+import EventDetailScreen from './src/screens/EventDetailScreen';
 
 import WelcomeScreen from './src/screens/WelcomeScreen';
 import LoginScreen from './src/screens/LoginScreen';
@@ -48,6 +50,8 @@ function HomeStack() {
     <HomeStackNav.Navigator screenOptions={{ headerShown: false }}>
       <HomeStackNav.Screen name="HomeMain" component={HomeScreen} />
       <HomeStackNav.Screen name="Notifications" component={NotificationsScreen} />
+      <HomeStackNav.Screen name="ProposeEvent" component={ProposeEventScreen} />
+      <HomeStackNav.Screen name="EventDetail" component={EventDetailScreen} />
     </HomeStackNav.Navigator>
   );
 }

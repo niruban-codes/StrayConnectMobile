@@ -1,3 +1,4 @@
+// src/screens/AnimalGalleryScreen.js
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
@@ -6,7 +7,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { db } from '../../firebase';
-import { collection, onSnapshot, query, orderBy, where } from 'firebase/firestore';
+import { collection, onSnapshot, query, where } from 'firebase/firestore';
+
 const COLORS = {
   primary: '#154212',
   background: '#faf9f6',
@@ -39,9 +41,9 @@ export default function AnimalGalleryScreen({ navigation }) {
 
   useEffect(() => {
     const q = query(
-  collection(db, 'animals'), 
-  where('status', 'in', ['stray', 'sheltered', 'lost'])
-);
+      collection(db, 'animals'), 
+      where('status', 'in', ['stray', 'sheltered', 'lost'])
+    );
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setAnimals(snapshot.docs.map(d => ({ ...d.data(), id: d.id })));
       setLoading(false);
@@ -50,16 +52,19 @@ export default function AnimalGalleryScreen({ navigation }) {
   }, []);
 
   const filtered = animals.filter(a => {
+    // 🚀 BUG FIX: Safely fallback to empty string if name or ID is missing
+    const safeName = a.name || '';
+    const safeId = a.animalId || '';
+    
     const matchesSearch =
-      a.name?.toLowerCase().includes(search.toLowerCase()) ||
-      a.animalId?.toLowerCase().includes(search.toLowerCase());
+      safeName.toLowerCase().includes(search.toLowerCase()) ||
+      safeId.toLowerCase().includes(search.toLowerCase());
 
     const matchesFilter = (() => {
       switch (activeFilter) {
         case 'Dogs':      return a.species?.toLowerCase() === 'dog';
         case 'Cats':      return a.species?.toLowerCase() === 'cat';
         case 'Adoptable': return a.status === 'sheltered' || a.status === 'stray';
-        // NEW: Show both strays AND lost owned pets here!
         case 'Lost & Found': return a.status === 'stray' || a.status === 'lost'; 
         default:          return true;
       }
@@ -76,7 +81,6 @@ export default function AnimalGalleryScreen({ navigation }) {
         activeOpacity={0.85}
         onPress={() => navigation.navigate('AnimalDetail', { animal: item })}
       >
-        {/* Photo */}
         <View style={styles.photoContainer}>
           {item.imageUrl ? (
             <Image source={{ uri: item.imageUrl }} style={styles.photo} />
@@ -85,11 +89,9 @@ export default function AnimalGalleryScreen({ navigation }) {
               <MaterialCommunityIcons name="paw-outline" size={32} color={COLORS.outlineVariant} />
             </View>
           )}
-          {/* SC ID Badge */}
           <View style={styles.idBadge}>
             <Text style={styles.idText}>{item.animalId || '—'}</Text>
           </View>
-          {/* Verified Badge */}
           {item.isVerified ? (
             <View style={styles.verifiedBadge}>
               <MaterialCommunityIcons name="check-circle" size={10} color="#fff" />
@@ -103,10 +105,10 @@ export default function AnimalGalleryScreen({ navigation }) {
           )}
         </View>
 
-        {/* Info */}
         <View style={styles.cardInfo}>
           <View style={styles.cardRow}>
-            <Text style={styles.animalName} numberOfLines={1}>{item.name}</Text>
+            {/* 🚀 BUG FIX: Fallback text if name is empty */}
+            <Text style={styles.animalName} numberOfLines={1}>{item.name || 'Unnamed Pet'}</Text>
             <View style={[styles.statusBadge, { backgroundColor: sc.bg }]}>
               <Text style={[styles.statusText, { color: sc.text }]}>{sc.label}</Text>
             </View>
@@ -129,7 +131,6 @@ export default function AnimalGalleryScreen({ navigation }) {
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
 
-      {/* Header */}
       <View style={styles.header}>
         <MaterialCommunityIcons name="paw" size={22} color={COLORS.primary} />
         <Text style={styles.headerTitle}>StrayConnect</Text>
@@ -138,15 +139,9 @@ export default function AnimalGalleryScreen({ navigation }) {
         </TouchableOpacity>
       </View>
 
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Title */}
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <Text style={styles.pageTitle}>Find a Companion</Text>
 
-        {/* Search */}
         <View style={styles.searchBar}>
           <MaterialCommunityIcons name="magnify" size={20} color={COLORS.outlineVariant} />
           <TextInput
@@ -163,12 +158,7 @@ export default function AnimalGalleryScreen({ navigation }) {
           )}
         </View>
 
-        {/* Filter Chips */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filterRow}
-        >
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
           {FILTERS.map(f => (
             <TouchableOpacity
               key={f}
@@ -182,7 +172,6 @@ export default function AnimalGalleryScreen({ navigation }) {
           ))}
         </ScrollView>
 
-        {/* Grid */}
         {loading ? (
           <View style={styles.loadingState}>
             <ActivityIndicator size="large" color={COLORS.primary} />
@@ -211,193 +200,37 @@ export default function AnimalGalleryScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#faf9f6' },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    backgroundColor: 'rgba(250,249,246,0.92)',
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(194,201,187,0.3)',
-  },
-  headerTitle: {
-    fontSize: 17,
-    fontWeight: '800',
-    color: '#154212',
-    letterSpacing: -0.3,
-  },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 14, backgroundColor: 'rgba(250,249,246,0.92)', borderBottomWidth: 1, borderBottomColor: 'rgba(194,201,187,0.3)' },
+  headerTitle: { fontSize: 17, fontWeight: '800', color: '#154212', letterSpacing: -0.3 },
   scroll: { flex: 1 },
   scrollContent: { padding: 20 },
-  pageTitle: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#154212',
-    letterSpacing: -0.5,
-    marginBottom: 16,
-  },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    gap: 10,
-    marginBottom: 16,
-    shadowColor: '#1a1c1a',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 14,
-    color: '#1a1c1a',
-  },
-  filterRow: {
-    gap: 8,
-    paddingBottom: 4,
-    marginBottom: 20,
-  },
-  filterChip: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 999,
-    backgroundColor: '#f4f3f1',
-  },
-  filterChipActive: {
-    backgroundColor: '#154212',
-  },
-  filterText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#42493e',
-  },
-  filterTextActive: {
-    color: '#fff',
-  },
-  gridRow: {
-    gap: 12,
-    marginBottom: 12,
-  },
-  card: {
-    flex: 1,
-    backgroundColor: 'rgba(255,255,255,0.6)',
-    borderRadius: 20,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.9)',
-    shadowColor: '#1a1c1a',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  photoContainer: {
-    position: 'relative',
-    height: 130,
-  },
-  photo: {
-    width: '100%',
-    height: '100%',
-  },
-  photoPlaceholder: {
-    backgroundColor: '#efeeeb',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  idBadge: {
-    position: 'absolute',
-    top: 8,
-    left: 8,
-    backgroundColor: '#2563eb',
-    borderRadius: 999,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-  },
-  idText: {
-    color: '#fff',
-    fontSize: 9,
-    fontWeight: '700',
-  },
-  verifiedBadge: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    backgroundColor: '#10b981',
-    borderRadius: 999,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-  },
-  verifiedText: {
-    color: '#fff',
-    fontSize: 9,
-    fontWeight: '700',
-  },
-  cardInfo: {
-    padding: 10,
-  },
-  cardRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 3,
-  },
-  animalName: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#154212',
-    flex: 1,
-    marginRight: 4,
-  },
-  statusBadge: {
-    borderRadius: 999,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-  },
-  statusText: {
-    fontSize: 9,
-    fontWeight: '700',
-  },
-  animalMeta: {
-    fontSize: 11,
-    color: '#42493e',
-    marginBottom: 4,
-    textTransform: 'capitalize',
-  },
-  locationRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-  },
-  locationText: {
-    fontSize: 11,
-    color: '#72796e',
-    flex: 1,
-  },
-  loadingState: {
-    paddingVertical: 60,
-    alignItems: 'center',
-  },
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: 60,
-    gap: 10,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#154212',
-  },
-  emptySubtitle: {
-    fontSize: 13,
-    color: '#42493e',
-    textAlign: 'center',
-    maxWidth: 220,
-  },
+  pageTitle: { fontSize: 28, fontWeight: '800', color: '#154212', letterSpacing: -0.5, marginBottom: 16 },
+  searchBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 16, paddingHorizontal: 14, paddingVertical: 12, gap: 10, marginBottom: 16, shadowColor: '#1a1c1a', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 6, elevation: 2 },
+  searchInput: { flex: 1, fontSize: 14, color: '#1a1c1a' },
+  filterRow: { gap: 8, paddingBottom: 4, marginBottom: 20 },
+  filterChip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 999, backgroundColor: '#f4f3f1' },
+  filterChipActive: { backgroundColor: '#154212' },
+  filterText: { fontSize: 13, fontWeight: '600', color: '#42493e' },
+  filterTextActive: { color: '#fff' },
+  gridRow: { gap: 12, marginBottom: 12 },
+  card: { flex: 1, backgroundColor: 'rgba(255,255,255,0.6)', borderRadius: 20, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.9)', shadowColor: '#1a1c1a', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
+  photoContainer: { position: 'relative', height: 130 },
+  photo: { width: '100%', height: '100%' },
+  photoPlaceholder: { backgroundColor: '#efeeeb', alignItems: 'center', justifyContent: 'center' },
+  idBadge: { position: 'absolute', top: 8, left: 8, backgroundColor: '#2563eb', borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },
+  idText: { color: '#fff', fontSize: 9, fontWeight: '700' },
+  verifiedBadge: { position: 'absolute', top: 8, right: 8, backgroundColor: '#10b981', borderRadius: 999, paddingHorizontal: 7, paddingVertical: 3, flexDirection: 'row', alignItems: 'center', gap: 3 },
+  verifiedText: { color: '#fff', fontSize: 9, fontWeight: '700' },
+  cardInfo: { padding: 10 },
+  cardRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 3 },
+  animalName: { fontSize: 14, fontWeight: '700', color: '#154212', flex: 1, marginRight: 4 },
+  statusBadge: { borderRadius: 999, paddingHorizontal: 6, paddingVertical: 2 },
+  statusText: { fontSize: 9, fontWeight: '700' },
+  animalMeta: { fontSize: 11, color: '#42493e', marginBottom: 4, textTransform: 'capitalize' },
+  locationRow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
+  locationText: { fontSize: 11, color: '#72796e', flex: 1 },
+  loadingState: { paddingVertical: 60, alignItems: 'center' },
+  emptyState: { alignItems: 'center', paddingVertical: 60, gap: 10 },
+  emptyTitle: { fontSize: 18, fontWeight: '700', color: '#154212' },
+  emptySubtitle: { fontSize: 13, color: '#42493e', textAlign: 'center', maxWidth: 220 },
 });
