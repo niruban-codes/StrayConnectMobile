@@ -1,10 +1,10 @@
 // src/screens/AlertDetailScreen.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
-  StyleSheet, StatusBar, Image, Dimensions, Alert, ActivityIndicator
+  StyleSheet, StatusBar, Image, Dimensions, Alert, ActivityIndicator, Animated
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context'; // 🚀 CHANGED IMPORT
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import axios from 'axios';
@@ -13,23 +13,41 @@ import { doc, updateDoc, onSnapshot } from 'firebase/firestore';
 
 const { width } = Dimensions.get('window');
 
+// 🎨 "MONITO" COLOR PALETTE
 const COLORS = {
-  primary: '#154212',
-  background: '#faf9f6',
-  onSurface: '#1a1c1a',
-  onSurfaceVariant: '#42493e',
-  outlineVariant: '#c2c9bb',
-  error: '#ba1a1a',
-  blue: '#2563eb',
+  primary: '#003459',       // Dark Blue
+  secondary: '#F7DBA7',     // Mon Yellow
+  background: '#FDFDFD',    // Neutral 00
+  surface: '#FFFFFF',       // Pure White
+  border: '#EBEEEF',        // Neutral 10
+  textDark: '#00171F',      // Neutral 100
+  textMuted: '#667479',     // Neutral 60
+  
+  // State Colors
+  pinkRed: '#FF564F',
+  greenLight: '#34C759',
+  orangeShine: '#FF912C',
+  blueSea: '#00A7E7',
 };
 
 export default function AlertDetailScreen({ route, navigation }) {
+  const insets = useSafeAreaInsets(); // 🚀 GRAB INSETS
   const { alertItem: initialAlert } = route.params;
   
   const [alertItem, setAlertItem] = useState(initialAlert);
   const [submitting, setSubmitting] = useState(false);
+
+  // 🚀 ANIMATION VALUES
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
   
   useEffect(() => {
+    // 🚀 ENTRANCE ANIMATION
+    Animated.parallel([
+      Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
+      Animated.spring(slideAnim, { toValue: 0, friction: 8, tension: 40, useNativeDriver: true })
+    ]).start();
+
     const unsub = onSnapshot(doc(db, 'reports', initialAlert.id), (docSnap) => {
       if (docSnap.exists()) {
         setAlertItem({ id: docSnap.id, ...docSnap.data() });
@@ -143,18 +161,17 @@ export default function AlertDetailScreen({ route, navigation }) {
     if (alertItem.status === 'in_progress' && alertItem.helperId !== currentUser?.uid) {
       return (
         <View style={[styles.btn, styles.disabledBtn]}>
-          <MaterialCommunityIcons name="account-clock" size={20} color={COLORS.outlineVariant} />
-          <Text style={[styles.btnText, { color: COLORS.outlineVariant }]}>Someone is already on the way</Text>
+          <MaterialCommunityIcons name="account-clock" size={20} color={COLORS.textMuted} />
+          <Text style={[styles.btnText, { color: COLORS.textMuted }]}>Someone is already on the way</Text>
         </View>
       );
     }
 
-    // 🚀 UPDATED: Distinct styling for "Under Review" state
     if (alertItem.status === 'reviewing') {
       return (
         <View style={[styles.btn, styles.reviewingBtn]}>
-          <MaterialCommunityIcons name="shield-search" size={20} color="#3730a3" />
-          <Text style={[styles.btnText, { color: '#3730a3' }]}>Proof Under Admin Review</Text>
+          <MaterialCommunityIcons name="shield-search" size={20} color={COLORS.blueSea} />
+          <Text style={[styles.btnText, { color: COLORS.blueSea }]}>Proof Under Admin Review</Text>
         </View>
       );
     }
@@ -162,8 +179,8 @@ export default function AlertDetailScreen({ route, navigation }) {
     if (alertItem.status === 'resolved') {
       return (
         <View style={[styles.btn, styles.resolvedBtn]}>
-          <MaterialCommunityIcons name="check-decagram" size={20} color="#154212" />
-          <Text style={[styles.btnText, { color: '#154212' }]}>Rescue Verified & Resolved</Text>
+          <MaterialCommunityIcons name="check-decagram" size={20} color={COLORS.greenLight} />
+          <Text style={[styles.btnText, { color: COLORS.greenLight }]}>Rescue Verified & Resolved</Text>
         </View>
       );
     }
@@ -172,9 +189,11 @@ export default function AlertDetailScreen({ route, navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
+    // 🚀 APPLY INSETS TO FIX LAYOUT
+    <View style={[styles.safe, { paddingTop: insets.top }]}>
+      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent={true} />
 
+      {/* 🌟 PREMIUM HEADER */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <MaterialCommunityIcons name="arrow-left" size={24} color={COLORS.primary} />
@@ -183,83 +202,108 @@ export default function AlertDetailScreen({ route, navigation }) {
         <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
-        <View style={styles.sliderContainer}>
-          <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}>
-            {photos.map((url, index) => (
-              <Image key={index} source={{ uri: url }} style={styles.sliderImage} />
-            ))}
-          </ScrollView>
-          {photos.length > 1 && (
-            <View style={styles.sliderBadge}>
-              <MaterialCommunityIcons name="gesture-swipe-horizontal" size={14} color="#fff" />
-              <Text style={styles.sliderBadgeText}>Swipe for more</Text>
-            </View>
-          )}
-        </View>
-
-        <View style={styles.content}>
-          <View style={styles.metaRow}>
-            <View style={styles.typeBadge}>
-              <MaterialCommunityIcons name="alert-octagon" size={14} color="#fff" />
-              <Text style={styles.typeBadgeText}>{alertItem.incidentType}</Text>
-            </View>
-            <Text style={styles.timeText}>
-              {alertItem.createdAt?.toDate ? alertItem.createdAt.toDate().toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Recently'}
-            </Text>
-          </View>
-
-          <Text style={styles.title}>{alertItem.animalType} in Danger</Text>
+      <Animated.View style={{ flex: 1, opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
           
-          <View style={styles.infoBox}>
-            <MaterialCommunityIcons name="map-marker" size={20} color={COLORS.primary} />
-            <View>
-              <Text style={styles.infoLabel}>Last Known Location</Text>
-              <Text style={styles.infoValue}>{alertItem.location}</Text>
-            </View>
+          {/* 🌟 EDGE-TO-EDGE HERO SLIDER */}
+          <View style={styles.sliderContainer}>
+            <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}>
+              {photos.map((url, index) => (
+                <Image key={index} source={{ uri: url }} style={styles.sliderImage} />
+              ))}
+            </ScrollView>
+            {photos.length > 1 && (
+              <View style={styles.sliderBadge}>
+                <MaterialCommunityIcons name="gesture-swipe-horizontal" size={14} color="#fff" />
+                <Text style={styles.sliderBadgeText}>Swipe for more</Text>
+              </View>
+            )}
           </View>
 
-          <Text style={styles.sectionTitle}>Description</Text>
-          <Text style={styles.description}>{alertItem.description}</Text>
+          {/* 🌟 CONTENT BODY */}
+          <View style={styles.content}>
+            <View style={styles.metaRow}>
+              <View style={styles.typeBadge}>
+                <MaterialCommunityIcons name="alert-octagon" size={14} color="#fff" />
+                <Text style={styles.typeBadgeText}>{alertItem.incidentType}</Text>
+              </View>
+              <Text style={styles.timeText}>
+                {alertItem.createdAt?.toDate ? alertItem.createdAt.toDate().toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Recently'}
+              </Text>
+            </View>
 
-        </View>
-      </ScrollView>
+            <Text style={styles.title}>{alertItem.animalType} in Danger</Text>
+            
+            {/* 🌟 MONITO STYLE INFO CARD */}
+            <View style={styles.infoBox}>
+              <View style={styles.infoIconBg}>
+                <MaterialCommunityIcons name="map-marker-radius" size={24} color={COLORS.orangeShine} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.infoLabel}>Last Known Location</Text>
+                <Text style={styles.infoValue}>{alertItem.location}</Text>
+              </View>
+            </View>
 
-      {/* Floating Action Button */}
-      <View style={styles.bottomBar}>
+            <Text style={styles.sectionTitle}>Description</Text>
+            <Text style={styles.description}>{alertItem.description}</Text>
+
+          </View>
+        </ScrollView>
+      </Animated.View>
+
+      {/* 🌟 FLOATING ACTION BAR */}
+      <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom + 16, 36) }]}>
         {renderBottomAction()}
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: COLORS.background },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#e9e8e5' },
-  backBtn: { padding: 8, backgroundColor: '#f4f3f1', borderRadius: 999 },
-  headerTitle: { fontSize: 16, fontWeight: '700', color: COLORS.onSurface },
-  sliderContainer: { position: 'relative', width: width, height: width },
-  sliderImage: { width: width, height: width, resizeMode: 'cover' },
-  sliderBadge: { position: 'absolute', bottom: 16, right: 16, backgroundColor: 'rgba(0,0,0,0.6)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, flexDirection: 'row', alignItems: 'center', gap: 6 },
-  sliderBadgeText: { color: '#fff', fontSize: 12, fontWeight: '600' },
-  content: { padding: 20 },
-  metaRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  typeBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: COLORS.error, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999 },
-  typeBadgeText: { color: '#fff', fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 },
-  timeText: { fontSize: 13, fontWeight: '500', color: COLORS.outlineVariant },
-  title: { fontSize: 28, fontWeight: '800', color: '#1a1c1a', marginBottom: 20, letterSpacing: -0.5 },
-  infoBox: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#f4f3f1', padding: 16, borderRadius: 16, marginBottom: 24 },
-  infoLabel: { fontSize: 11, fontWeight: '700', color: COLORS.outlineVariant, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 },
-  infoValue: { fontSize: 15, fontWeight: '600', color: '#1a1c1a' },
-  sectionTitle: { fontSize: 16, fontWeight: '800', color: '#1a1c1a', marginBottom: 8 },
-  description: { fontSize: 15, color: '#42493e', lineHeight: 24 },
-  bottomBar: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 20, backgroundColor: 'rgba(250,249,246,0.95)', borderTopWidth: 1, borderTopColor: '#e9e8e5' },
+  safe: { flex: 1, backgroundColor: COLORS.secondary }, // Sets yellow behind status bar
   
-  btn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 18, borderRadius: 999, gap: 8, elevation: 5 },
-  btnText: { fontSize: 15, fontWeight: '800' },
-  dangerBtn: { backgroundColor: COLORS.error, shadowColor: COLORS.error, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 10 },
-  primaryBtn: { backgroundColor: COLORS.primary, shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 10 },
-  disabledBtn: { backgroundColor: '#e9e8e5', elevation: 0 },
-  reviewingBtn: { backgroundColor: '#e0e7ff', elevation: 0 }, // 🚀 distinct indigo color
-  resolvedBtn: { backgroundColor: '#bcf0ae', elevation: 0 },
+  // Header
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12, backgroundColor: COLORS.secondary },
+  backBtn: { padding: 8, backgroundColor: COLORS.surface, borderRadius: 12, borderWidth: 1, borderColor: COLORS.border },
+  headerTitle: { fontSize: 18, fontWeight: '900', color: COLORS.primary, letterSpacing: -0.5 },
+  
+  // Image Slider
+  sliderContainer: { position: 'relative', width: width, height: width * 0.9, backgroundColor: COLORS.border, borderBottomLeftRadius: 32, borderBottomRightRadius: 32, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 4 },
+  sliderImage: { width: width, height: '100%', resizeMode: 'cover' },
+  sliderBadge: { position: 'absolute', bottom: 16, right: 16, backgroundColor: 'rgba(0,34,50,0.7)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, flexDirection: 'row', alignItems: 'center', gap: 6 },
+  sliderBadgeText: { color: '#fff', fontSize: 12, fontWeight: '700' },
+  
+  // Content Layout
+  content: { padding: 24, paddingTop: 32 },
+  metaRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  typeBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: COLORS.pinkRed, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999 },
+  typeBadgeText: { color: '#fff', fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 },
+  timeText: { fontSize: 13, fontWeight: '600', color: COLORS.textMuted },
+  
+  title: { fontSize: 32, fontWeight: '900', color: COLORS.primary, marginBottom: 24, letterSpacing: -1, lineHeight: 36 },
+  
+  // Monito Style Info Box
+  infoBox: { flexDirection: 'row', alignItems: 'center', gap: 16, backgroundColor: COLORS.surface, padding: 16, borderRadius: 20, marginBottom: 32, borderWidth: 1, borderColor: COLORS.border, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.03, shadowRadius: 8, elevation: 2 },
+  infoIconBg: { width: 48, height: 48, borderRadius: 14, backgroundColor: '#FFF3E0', alignItems: 'center', justifyContent: 'center' },
+  infoLabel: { fontSize: 11, fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 },
+  infoValue: { fontSize: 16, fontWeight: '800', color: COLORS.textDark, letterSpacing: -0.3 },
+  
+  sectionTitle: { fontSize: 18, fontWeight: '900', color: COLORS.primary, marginBottom: 12, letterSpacing: -0.5 },
+  description: { fontSize: 15, color: COLORS.textMuted, lineHeight: 24, fontWeight: '500' },
+  
+  // Bottom Action Bar
+  bottomBar: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 24, paddingVertical: 20, backgroundColor: COLORS.surface, borderTopWidth: 1, borderTopColor: COLORS.border, shadowColor: '#000', shadowOffset: { width: 0, height: -10 }, shadowOpacity: 0.04, shadowRadius: 20, elevation: 10 },
+  
+  // Buttons
+  btn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 18, borderRadius: 999, gap: 8 },
+  btnText: { fontSize: 15, fontWeight: '800', color: '#fff', letterSpacing: 0.3 },
+  
+  dangerBtn: { backgroundColor: COLORS.pinkRed, shadowColor: COLORS.pinkRed, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 5 },
+  primaryBtn: { backgroundColor: COLORS.primary, shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.2, shadowRadius: 12, elevation: 5 },
+  
+  // Status Indicator Buttons
+  disabledBtn: { backgroundColor: COLORS.border },
+  reviewingBtn: { backgroundColor: '#E1F5FE' },
+  resolvedBtn: { backgroundColor: '#E8F5E9' },
 });

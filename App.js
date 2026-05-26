@@ -1,14 +1,12 @@
 // App.js
 import React, { useState, useEffect } from 'react';
-import { View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, StatusBar } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { onAuthStateChanged } from 'firebase/auth';
-import LocalAlertsScreen from './src/screens/LocalAlertsScreen';
-import AlertDetailScreen from './src/screens/AlertDetailScreen';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context'; // 🚀 UPDATED IMPORT
 
 // IMPORT DB AND EXPO TOOLS HERE
 import { auth, db } from './firebase'; 
@@ -23,12 +21,13 @@ import ReportScreen from './src/screens/ReportScreen';
 import ProfileStack from './src/navigation/ProfileStack';
 import ProposeEventScreen from './src/screens/ProposeEventScreen';
 import EventDetailScreen from './src/screens/EventDetailScreen';
+import LocalAlertsScreen from './src/screens/LocalAlertsScreen';
+import AlertDetailScreen from './src/screens/AlertDetailScreen';
 
 import WelcomeScreen from './src/screens/WelcomeScreen';
 import LoginScreen from './src/screens/LoginScreen';
 import SignupScreen from './src/screens/SignupScreen';
 
-// CONFIGURE NOTIFICATIONS HOW TO BEHAVE (Moved to the top!)
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -40,10 +39,14 @@ Notifications.setNotificationHandler({
 const Tab = createBottomTabNavigator();
 const AuthStack = createStackNavigator();
 const HomeStackNav = createStackNavigator(); 
+const SOSStackNav = createStackNavigator();
 
-const PRIMARY = '#154212';
-const INACTIVE = '#94a3b8';
-const TAB_BG = '#ffffff';
+const COLORS = {
+  primary: '#003459',       
+  background: '#F7DBA7',    
+  surface: '#FFFFFF',       
+  inactive: '#667479',      
+};
 
 function HomeStack() {
   return (
@@ -55,7 +58,6 @@ function HomeStack() {
     </HomeStackNav.Navigator>
   );
 }
-const SOSStackNav = createStackNavigator();
 
 function SOSStack() {
   return (
@@ -66,121 +68,48 @@ function SOSStack() {
   );
 }
 
-export default function App() {
-  // 1. ALL USESTATE HOOKS
-  const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+// 🚀 NEW: Extracted Navigator to use insets for the Tab Bar!
+function RootNavigator({ user }) {
+  const insets = useSafeAreaInsets();
 
-  // 2. FIRST USEEFFECT HOOK: Firebase Auth
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      setIsLoading(false);
-    });
-    return unsubscribe;
-  }, []);
-
-  // 3. SECOND USEEFFECT HOOK: Push Notifications
-  // Notice this is ABOVE the if(isLoading) check!
-  useEffect(() => {
-    async function registerForPushNotificationsAsync() {
-      if (!user) return; 
-
-      try {
-        if (Device.isDevice) {
-          const { status: existingStatus } = await Notifications.getPermissionsAsync();
-          let finalStatus = existingStatus;
-          
-          if (existingStatus !== 'granted') {
-            const { status } = await Notifications.requestPermissionsAsync();
-            finalStatus = status;
-          }
-          
-          if (finalStatus !== 'granted') {
-            console.log('Permission not granted for Push Notifications');
-            return;
-          }
-
-          // Safe wrapper to prevent Expo Go from crashing in SDK 53
-          try {
-            const tokenData = await Notifications.getExpoPushTokenAsync({
-              projectId: "YOUR_EXPO_PROJECT_ID_HERE" // <-- Replace later!
-            });
-            
-            await setDoc(doc(db, 'users', user.uid), {
-              expoPushToken: tokenData.data,
-              email: user.email
-            }, { merge: true });
-            
-          } catch (expoError) {
-            console.log("Expo Go Limitation (Safe to ignore in dev): ", expoError.message);
-          }
-
-        } else {
-          console.log('Must use physical device for Push Notifications');
-        }
-      } catch (error) {
-        console.log("Notification setup error:", error);
-      }
-    }
-
-    registerForPushNotificationsAsync();
-  }, [user]);
-
-  // 4. EARLY RETURN (Must always be after all hooks!)
-  if (isLoading) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#faf9f6' }}>
-        <ActivityIndicator size="large" color={PRIMARY} />
-      </View>
-    );
-  }
-
-  // 5. MAIN RENDER
   return (
-    <SafeAreaProvider>
     <NavigationContainer>
       {user ? (
         <Tab.Navigator
           screenOptions={({ route }) => ({
             headerShown: false,
             tabBarShowLabel: true,
-            tabBarActiveTintColor: PRIMARY,
-            tabBarInactiveTintColor: INACTIVE,
-           tabBarStyle: {
-              backgroundColor: TAB_BG,
+            tabBarActiveTintColor: COLORS.primary,
+            tabBarInactiveTintColor: COLORS.inactive,
+            tabBarStyle: {
+              backgroundColor: COLORS.surface,
               borderTopWidth: 0,
-              elevation: 20,
-              shadowColor: '#154212',
-              shadowOffset: { width: 0, height: -4 },
-              shadowOpacity: 0.06,
-              shadowRadius: 12,
-              height : 92,
-              paddingBottom: 10,
-              paddingTop: 8,
-              
+              elevation: 24,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: -6 },
+              shadowOpacity: 0.08,
+              shadowRadius: 16,
+              height: 65 + insets.bottom, // 🚀 DYNAMIC HEIGHT PREVENTS GLITCHES
+              paddingBottom: insets.bottom || 10, // 🚀 DYNAMIC PADDING
+              paddingTop: 12,
             },
-            tabBarLabelStyle: { fontSize: 11, fontWeight: '600', marginTop: 2 },
+            tabBarLabelStyle: { fontSize: 11, fontWeight: '800', marginTop: 4, letterSpacing: -0.2 },
             tabBarIcon: ({ focused, color }) => {
               const icons = {
-                Home:    focused ? 'home'              : 'home-outline',
-                Browse:  focused ? 'paw'               : 'paw-outline',
+                Home:      focused ? 'home'              : 'home-outline',
+                Browse:    focused ? 'paw'               : 'paw-outline',
                 Report:    focused ? 'plus-circle'       : 'plus-circle-outline',
                 'SOS Feed': focused ? 'radar'            : 'radar',
-                Profile: focused ? 'account-circle'    : 'account-circle-outline',
+                Profile:   focused ? 'account-circle'    : 'account-circle-outline',
               };
-              return <MaterialCommunityIcons name={icons[route.name]} size={24} color={color} />;
+              return <MaterialCommunityIcons name={icons[route.name]} size={28} color={color} />;
             },
           })}
         >
           <Tab.Screen name="Home"    component={HomeStack} />
           <Tab.Screen name="Browse"  component={BrowseStack} />
           <Tab.Screen name="Report"  component={ReportScreen} />
-          <Tab.Screen 
-            name="SOS Feed" 
-            component={SOSStack} 
-            options={{ unmountOnBlur: true }} 
-          />
+          <Tab.Screen name="SOS Feed" component={SOSStack} options={{ unmountOnBlur: true }} />
           <Tab.Screen name="Profile" component={ProfileStack} />
         </Tab.Navigator>
       ) : (
@@ -191,6 +120,61 @@ export default function App() {
         </AuthStack.Navigator>
       )}
     </NavigationContainer>
+  );
+}
+
+export default function App() {
+  const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setIsLoading(false);
+    });
+    return unsubscribe;
+  }, []);
+
+  useEffect(() => {
+    async function registerForPushNotificationsAsync() {
+      if (!user) return; 
+      try {
+        if (Device.isDevice) {
+          const { status: existingStatus } = await Notifications.getPermissionsAsync();
+          let finalStatus = existingStatus;
+          if (existingStatus !== 'granted') {
+            const { status } = await Notifications.requestPermissionsAsync();
+            finalStatus = status;
+          }
+          if (finalStatus !== 'granted') return;
+
+          try {
+            const tokenData = await Notifications.getExpoPushTokenAsync({ projectId: "YOUR_EXPO_PROJECT_ID_HERE" });
+            await setDoc(doc(db, 'users', user.uid), { expoPushToken: tokenData.data, email: user.email }, { merge: true });
+          } catch (expoError) {
+            console.log("Expo Go Limitation: ", expoError.message);
+          }
+        }
+      } catch (error) {
+        console.log("Notification setup error:", error);
+      }
+    }
+    registerForPushNotificationsAsync();
+  }, [user]);
+
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background }}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+      </View>
+    );
+  }
+
+  return (
+    <SafeAreaProvider>
+      {/* 🚀 GLOBAL STATUS BAR */}
+      <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
+      <RootNavigator user={user} />
     </SafeAreaProvider>
   );
 }

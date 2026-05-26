@@ -1,19 +1,32 @@
 // src/screens/ProposeEventScreen.js
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Image } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  View, Text, StyleSheet, TextInput, ScrollView, TouchableOpacity, 
+  ActivityIndicator, Alert, Image, StatusBar, Animated 
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context'; 
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import axios from 'axios';
 import { db, auth } from '../../firebase';
 import { collection, addDoc } from 'firebase/firestore';
 
+// 🎨 "MONITO" COLOR PALETTE (Yellow Background Theme)
 const COLORS = {
-  primary: '#154212', background: '#faf9f6', surface: '#ffffff',
-  text: '#1a1c1a', outline: '#c2c9bb', error: '#ba1a1a', blue: '#2563eb'
+  primary: '#003459',       // Dark Blue
+  background: '#F7DBA7',    // Mon Yellow - MAIN BACKGROUND
+  surface: '#FFFFFF',       // Pure White
+  border: 'rgba(0, 52, 89, 0.1)', 
+  textDark: '#00171F',      
+  textMuted: '#52616B',     
+  
+  blueSea: '#00A7E7',
+  orangeShine: '#FF912C',
 };
 
 export default function ProposeEventScreen({ navigation }) {
+  const insets = useSafeAreaInsets(); 
+
   const [title, setTitle] = useState('');
   const [type, setType] = useState('Awareness Program');
   const [description, setDescription] = useState('');
@@ -21,6 +34,26 @@ export default function ProposeEventScreen({ navigation }) {
   const [date, setDate] = useState('');
   const [imageUri, setImageUri] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // 🚀 ANIMATION VALUES
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        friction: 8,
+        tension: 40,
+        useNativeDriver: true,
+      })
+    ]).start();
+  }, []);
 
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
@@ -63,8 +96,7 @@ export default function ProposeEventScreen({ navigation }) {
         uploadedUrl = res.data.secure_url;
       }
 
-      // 🚀 BUG FIX: Safely try to parse the date. If they typed a weird string, 
-      // fallback to the current date to prevent Firebase from crashing!
+      // 🚀 BUG FIX: Safely try to parse the date.
       const parsedDate = new Date(date);
       const safeFirebaseDate = isNaN(parsedDate.getTime()) ? new Date() : parsedDate;
 
@@ -74,8 +106,8 @@ export default function ProposeEventScreen({ navigation }) {
         type,
         description,
         location,
-        dateString: date, // We keep exactly what the user typed to show on the screen
-        date: safeFirebaseDate, // We save a safe Javascript date for Firebase sorting
+        dateString: date, 
+        date: safeFirebaseDate, 
         imageUrl: uploadedUrl,
         organizer: currentUser.displayName || 'Community Member',
         userId: currentUser.uid,
@@ -89,16 +121,18 @@ export default function ProposeEventScreen({ navigation }) {
         [{ text: 'OK', onPress: () => navigation.goBack() }]
       );
     } catch (error) {
-      // 🚀 NEW: This will print the exact error in your terminal!
       console.error("EVENT SUBMISSION ERROR: ", error); 
       Alert.alert('Error', 'Failed to submit event application: ' + error.message);
     } finally {
       setSubmitting(false);
     }
   };
-  
+
   return (
-    <SafeAreaView style={styles.safe}>
+    <View style={[styles.safe, { paddingTop: insets.top }]}>
+      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent={true} />
+
+      {/* 🌟 HEADER */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <MaterialCommunityIcons name="arrow-left" size={24} color={COLORS.primary} />
@@ -107,80 +141,124 @@ export default function ProposeEventScreen({ navigation }) {
         <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.infoBox}>
-          <MaterialCommunityIcons name="shield-check" size={20} color={COLORS.blue} />
-          <Text style={styles.infoText}>All events are reviewed by admins before being published to the community to ensure safety and relevance.</Text>
-        </View>
-
-        <TouchableOpacity style={styles.imagePicker} onPress={pickImage}>
-          {imageUri ? (
-            <Image source={{ uri: imageUri }} style={styles.previewImage} />
-          ) : (
-            <View style={styles.placeholder}>
-              <MaterialCommunityIcons name="image-plus" size={40} color={COLORS.outline} />
-              <Text style={styles.placeholderText}>Upload Event Poster (Optional)</Text>
+      <ScrollView 
+        contentContainerStyle={[styles.content, { paddingBottom: Math.max(insets.bottom + 20, 60) }]} 
+        showsVerticalScrollIndicator={false}
+      >
+        
+        <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
+          
+          <View style={styles.infoBox}>
+            <View style={styles.infoIconBg}>
+              <MaterialCommunityIcons name="shield-check" size={20} color={COLORS.blueSea} />
             </View>
-          )}
-        </TouchableOpacity>
+            <Text style={styles.infoText}>All events are reviewed by admins before being published to the community to ensure safety and relevance.</Text>
+          </View>
 
-        <Text style={styles.label}>Event Title *</Text>
-        <TextInput style={styles.input} placeholder="e.g. Beach Rescue Drive" value={title} onChangeText={setTitle} />
+          <TouchableOpacity style={styles.imagePicker} onPress={pickImage} activeOpacity={0.8}>
+            {imageUri ? (
+              <Image source={{ uri: imageUri }} style={styles.previewImage} />
+            ) : (
+              <View style={styles.placeholder}>
+                <MaterialCommunityIcons name="image-plus" size={40} color={COLORS.primary} style={{ opacity: 0.5 }} />
+                <Text style={styles.placeholderText}>Upload Event Poster (Optional)</Text>
+              </View>
+            )}
+          </TouchableOpacity>
 
-        <Text style={styles.label}>Event Type</Text>
-        <View style={styles.typeRow}>
-          {['Vaccination', 'Rescue', 'Awareness', 'Fundraiser'].map(t => (
-            <TouchableOpacity 
-              key={t} 
-              style={[styles.typeChip, type === t && styles.typeChipActive]}
-              onPress={() => setType(t)}
-            >
-              <Text style={[styles.typeText, type === t && {color: '#fff'}]}>{t}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+          <Text style={styles.label}>Event Title *</Text>
+          <TextInput 
+            style={styles.input} 
+            placeholder="e.g. Beach Rescue Drive" 
+            placeholderTextColor={COLORS.textMuted}
+            value={title} 
+            onChangeText={setTitle} 
+          />
 
-        <Text style={styles.label}>Date & Time *</Text>
-        <TextInput style={styles.input} placeholder="e.g. October 20th at 10:00 AM" value={date} onChangeText={setDate} />
+          <Text style={styles.label}>Event Type</Text>
+          <View style={styles.typeRow}>
+            {['Vaccination', 'Rescue', 'Awareness', 'Fundraiser'].map(t => (
+              <TouchableOpacity 
+                key={t} 
+                style={[styles.typeChip, type === t && styles.typeChipActive]}
+                onPress={() => setType(t)}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.typeText, type === t && {color: COLORS.surface}]}>{t}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
 
-        <Text style={styles.label}>Location *</Text>
-        <TextInput style={styles.input} placeholder="e.g. Mount Lavinia Beach" value={location} onChangeText={setLocation} />
+          <Text style={styles.label}>Date & Time *</Text>
+          <TextInput 
+            style={styles.input} 
+            placeholder="e.g. October 20th at 10:00 AM" 
+            placeholderTextColor={COLORS.textMuted}
+            value={date} 
+            onChangeText={setDate} 
+          />
 
-        <Text style={styles.label}>Description *</Text>
-        <TextInput 
-          style={[styles.input, styles.textArea]} 
-          placeholder="Tell people what the event is about and what they should bring..." 
-          multiline numberOfLines={4} 
-          value={description} onChangeText={setDescription} 
-        />
+          <Text style={styles.label}>Location *</Text>
+          <TextInput 
+            style={styles.input} 
+            placeholder="e.g. Mount Lavinia Beach" 
+            placeholderTextColor={COLORS.textMuted}
+            value={location} 
+            onChangeText={setLocation} 
+          />
 
-        <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit} disabled={submitting}>
-          {submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitText}>Submit Application</Text>}
-        </TouchableOpacity>
+          <Text style={styles.label}>Description *</Text>
+          <TextInput 
+            style={[styles.input, styles.textArea]} 
+            placeholder="Tell people what the event is about and what they should bring..." 
+            placeholderTextColor={COLORS.textMuted}
+            multiline 
+            numberOfLines={4} 
+            value={description} 
+            onChangeText={setDescription} 
+          />
+
+          <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit} disabled={submitting} activeOpacity={0.8}>
+            {submitting ? (
+              <ActivityIndicator color={COLORS.surface} />
+            ) : (
+              <Text style={styles.submitText}>Submit Application</Text>
+            )}
+          </TouchableOpacity>
+
+        </Animated.View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: COLORS.background },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, backgroundColor: COLORS.background },
-  backBtn: { padding: 8, backgroundColor: '#f4f3f1', borderRadius: 999 },
-  headerTitle: { fontSize: 18, fontWeight: '800', color: COLORS.primary },
-  content: { padding: 20, paddingBottom: 60 },
-  infoBox: { flexDirection: 'row', backgroundColor: '#e0e7ff', padding: 16, borderRadius: 16, gap: 12, marginBottom: 24 },
-  infoText: { flex: 1, fontSize: 13, color: '#3730a3', lineHeight: 20 },
-  imagePicker: { width: '100%', height: 180, backgroundColor: '#f4f3f1', borderRadius: 20, overflow: 'hidden', marginBottom: 24, borderWidth: 1, borderStyle: 'dashed', borderColor: COLORS.outline },
+  
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 10 },
+  backBtn: { padding: 8, backgroundColor: 'rgba(255,255,255,0.6)', borderRadius: 12, borderWidth: 1, borderColor: COLORS.border },
+  headerTitle: { fontSize: 18, fontWeight: '900', color: COLORS.primary, letterSpacing: -0.5 },
+  
+  content: { paddingHorizontal: 20, paddingTop: 10 },
+  
+  infoBox: { flexDirection: 'row', backgroundColor: COLORS.surface, padding: 16, borderRadius: 20, gap: 12, marginBottom: 24, borderWidth: 1, borderColor: COLORS.border, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.03, shadowRadius: 8, elevation: 2 },
+  infoIconBg: { width: 36, height: 36, borderRadius: 10, backgroundColor: '#E1F5FE', alignItems: 'center', justifyContent: 'center' },
+  infoText: { flex: 1, fontSize: 13, color: COLORS.textMuted, lineHeight: 20, fontWeight: '500' },
+  
+  imagePicker: { width: '100%', height: 180, backgroundColor: 'rgba(255,255,255,0.4)', borderRadius: 24, overflow: 'hidden', marginBottom: 24, borderWidth: 2, borderStyle: 'dashed', borderColor: 'rgba(0, 52, 89, 0.2)' },
   previewImage: { width: '100%', height: '100%' },
   placeholder: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8 },
-  placeholderText: { color: COLORS.outline, fontWeight: '600', fontSize: 14 },
-  label: { fontSize: 14, fontWeight: '700', color: COLORS.text, marginBottom: 8, marginTop: 12 },
-  input: { backgroundColor: COLORS.surface, borderWidth: 1, borderColor: 'rgba(194,201,187,0.4)', borderRadius: 14, padding: 14, fontSize: 15 },
-  textArea: { minHeight: 100, textAlignVertical: 'top' },
-  typeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
-  typeChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, backgroundColor: '#f4f3f1', borderWidth: 1, borderColor: 'transparent' },
-  typeChipActive: { backgroundColor: COLORS.primary },
-  typeText: { fontSize: 13, fontWeight: '600', color: COLORS.text },
-  submitBtn: { backgroundColor: COLORS.primary, padding: 18, borderRadius: 999, alignItems: 'center', marginTop: 32, shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 10, elevation: 5 },
-  submitText: { color: '#fff', fontSize: 16, fontWeight: '800' }
+  placeholderText: { color: COLORS.primary, fontWeight: '700', fontSize: 13, opacity: 0.7 },
+  
+  label: { fontSize: 14, fontWeight: '800', color: COLORS.primary, marginBottom: 8, marginTop: 12, letterSpacing: -0.3 },
+  input: { backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border, borderRadius: 16, padding: 16, fontSize: 15, fontWeight: '500', color: COLORS.textDark, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.02, shadowRadius: 4, elevation: 1 },
+  textArea: { minHeight: 120, textAlignVertical: 'top' },
+  
+  typeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 12 },
+  typeChip: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12, backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border },
+  typeChipActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+  typeText: { fontSize: 13, fontWeight: '700', color: COLORS.textMuted },
+  
+  submitBtn: { backgroundColor: COLORS.primary, paddingVertical: 20, borderRadius: 16, alignItems: 'center', marginTop: 32, shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.2, shadowRadius: 12, elevation: 5 },
+  submitText: { color: COLORS.surface, fontSize: 16, fontWeight: '900', letterSpacing: -0.3 }
 });

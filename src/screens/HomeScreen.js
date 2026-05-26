@@ -1,37 +1,78 @@
 // src/screens/HomeScreen.js
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity,
-  StyleSheet, Image, FlatList, StatusBar
+  View, Text, TouchableOpacity, StyleSheet, Image, 
+  FlatList, StatusBar, Dimensions, Animated
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { db } from '../../firebase';
 import { collection, query, limit, onSnapshot, where } from 'firebase/firestore';
 
+const { width } = Dimensions.get('window');
+
+// 🎨 UPDATED "MONITO" COLOR PALETTE (Yellow Background)
 const COLORS = {
-  primary: '#154212',
-  primaryContainer: '#2d5a27',
-  primaryFixed: '#bcf0ae',
-  background: '#faf9f6',
-  surface: '#ffffff',
-  surfaceContainer: '#efeeeb',
-  surfaceContainerLow: '#f4f3f1',
-  surfaceContainerHigh: '#e9e8e5',
-  onSurface: '#1a1c1a',
-  onSurfaceVariant: '#42493e',
-  outlineVariant: '#c2c9bb',
-  error: '#ba1a1a',
-  amber: '#d97706',
-  blue: '#2563eb',
+  primary: '#003459',       // Dark Blue
+  background: '#F7DBA7',    // Mon Yellow - NEW MAIN BACKGROUND
+  surface: '#FFFFFF',       // Pure White
+  surfaceOff: '#FDFDFD',    // Neutral 00
+  border: '#EBEEEF',        // Neutral 10
+  textDark: '#00171F',      // Neutral 100
+  textMuted: '#52616B',     // Darkened slightly for contrast against yellow
+  
+  pinkRed: '#FF564F',
+  greenLight: '#34C759',
+  orangeShine: '#FF912C',
+  blueSea: '#00A7E7',
 };
 
+const HEADER_HEIGHT = 60; // Fixed height for our animated header
+
 export default function HomeScreen({ navigation }) {
+  const insets = useSafeAreaInsets(); 
+
   const [recentAnimals, setRecentAnimals] = useState([]);
   const [upcomingEvents, setUpcomingEvents] = useState([]);
 
+  // 🚀 ENTRANCE ANIMATION VALUES
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
+
+  // 🚀 SCROLLING HEADER ANIMATION VALUES
+  const scrollY = useRef(new Animated.Value(0)).current;
+  
+  const clampedScrollY = Animated.diffClamp(
+    scrollY.interpolate({
+      inputRange: [0, 10000],
+      outputRange: [0, 10000],
+      extrapolateLeft: 'clamp',
+    }),
+    0,
+    HEADER_HEIGHT
+  );
+
+  const headerTranslateY = clampedScrollY.interpolate({
+    inputRange: [0, HEADER_HEIGHT],
+    outputRange: [0, -HEADER_HEIGHT], // Slides up completely
+    extrapolate: 'clamp',
+  });
+
   useEffect(() => {
-    // 1. Fetch Animals
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        friction: 8,
+        tension: 40,
+        useNativeDriver: true,
+      })
+    ]).start();
+
     const qAnimals = query(
       collection(db, 'animals'),
       where('status', 'in', ['stray', 'sheltered','lost']),
@@ -41,14 +82,12 @@ export default function HomeScreen({ navigation }) {
       setRecentAnimals(snapshot.docs.map(d => ({ ...d.data(), id: d.id })));
     });
 
-    // 2. Fetch Approved Events ONLY
     const qEvents = query(
       collection(db, 'events'),
       where('status', '==', 'approved')
     );
     const unsubEvents = onSnapshot(qEvents, (snapshot) => {
       const fetchedEvents = snapshot.docs.map(d => ({ ...d.data(), id: d.id }));
-      // Sort locally to prevent Firebase index errors
       fetchedEvents.sort((a, b) => (a.date?.toMillis() || 0) - (b.date?.toMillis() || 0));
       setUpcomingEvents(fetchedEvents);
     });
@@ -58,233 +97,320 @@ export default function HomeScreen({ navigation }) {
 
   const statusColor = (status) => {
     switch (status) {
-      case 'adopted':   return { bg: '#bcf0ae', text: '#002201' };
-      case 'sheltered': return { bg: '#ccebc7', text: '#506b4f' };
-      case 'lost':      return { bg: '#ffdad6', text: '#ba1a1a' };
-      default:          return { bg: '#ffddb2', text: '#624000' };
+      case 'adopted':   return { bg: '#E8F5E9', text: COLORS.greenLight };
+      case 'sheltered': return { bg: '#E1F5FE', text: COLORS.blueSea };
+      case 'lost':      return { bg: '#FFEBEE', text: COLORS.pinkRed };
+      default:          return { bg: '#FFF3E0', text: COLORS.orangeShine };
     }
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
+    <View style={styles.safe}>
+      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent={true} />
 
-      <View style={styles.header}>
+      {/* 🚀 LAYER 1: SOLID BACKGROUND FOR STATUS BAR (Keeps clock readable) */}
+      <View style={{
+        position: 'absolute',
+        top: 0, left: 0, right: 0,
+        height: insets.top,
+        backgroundColor: COLORS.background,
+        zIndex: 101 // HIGHEST Z-INDEX
+      }} />
+
+      {/* 🚀 LAYER 2: ANIMATED HEADER (Slides behind Layer 1) */}
+      <Animated.View style={[
+        styles.header, 
+        { 
+          top: insets.top, // Starts exactly below Layer 1
+          height: HEADER_HEIGHT, 
+          transform: [{ translateY: headerTranslateY }] 
+        }
+      ]}>
         <View style={styles.headerLeft}>
-          <MaterialCommunityIcons name="paw" size={26} color={COLORS.primary} />
+          <MaterialCommunityIcons name="paw" size={28} color={COLORS.primary} />
           <Text style={styles.logo}>StrayConnect</Text>
         </View>
         <TouchableOpacity style={styles.notifBtn} onPress={() => navigation.navigate('Notifications')}>
-          <MaterialCommunityIcons name="bell-outline" size={22} color={COLORS.primary} />
+          <MaterialCommunityIcons name="bell-outline" size={24} color={COLORS.primary} />
+          <View style={styles.notifDot} />
         </TouchableOpacity>
-      </View>
+      </Animated.View>
 
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        
-        <View style={styles.section}>
-          <Text style={styles.greeting}>Hello, Friend! 🐾</Text>
-          <Text style={styles.subGreeting}>Welcome to your digital sanctuary.</Text>
-        </View>
-
-        <TouchableOpacity style={styles.emergencyBanner} activeOpacity={0.85}>
-          <View style={styles.emergencyLeft}>
-            <MaterialCommunityIcons name="alert-circle" size={28} color="#fff" />
-            <View style={{ marginLeft: 12 }}>
-              <Text style={styles.emergencyTitle}>Emergency Rescue</Text>
-              <Text style={styles.emergencySubtitle}>Report an animal in immediate danger</Text>
-            </View>
-          </View>
-          <MaterialCommunityIcons name="chevron-right" size={24} color="rgba(255,255,255,0.7)" />
-        </TouchableOpacity>
-
-        <Text style={styles.sectionTitle}>Quick Actions</Text>
-        <View style={styles.quickActions}>
-          <TouchableOpacity style={styles.actionCard} activeOpacity={0.8} onPress={() => navigation.navigate('Report')}>
-            <View style={[styles.actionIcon, { backgroundColor: '#bcf0ae' }]}>
-              <MaterialCommunityIcons name="camera" size={26} color={COLORS.primary} />
-            </View>
-            <Text style={styles.actionLabel}>Report a Stray</Text>
-            <Text style={styles.actionSub}>Help an animal nearby</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.actionCard} activeOpacity={0.8} onPress={() => navigation.navigate('Browse')}>
-            <View style={[styles.actionIcon, { backgroundColor: '#ccebc7' }]}>
-              <MaterialCommunityIcons name="paw" size={26} color={COLORS.primary} />
-            </View>
-            <Text style={styles.actionLabel}>Browse Adoptions</Text>
-            <Text style={styles.actionSub}>Find a forever friend</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* 🚀 NEW: Upcoming Events Feed */}
-        <Text style={styles.sectionTitle}>Exciting Events</Text>
-        {upcomingEvents.length === 0 ? (
-          <View style={styles.emptyState}>
-            <MaterialCommunityIcons name="calendar-blank" size={40} color={COLORS.outlineVariant} />
-            <Text style={styles.emptyText}>No upcoming events right now.</Text>
-          </View>
-        ) : (
-          <FlatList
-            data={upcomingEvents}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            keyExtractor={item => item.id}
-            contentContainerStyle={{ paddingRight: 20, paddingBottom: 28 }}
-            renderItem={({ item }) => {
-              const eventDate = item.date?.toDate ? item.date.toDate() : new Date();
-              const month = eventDate.toLocaleString('default', { month: 'short' });
-              const day = eventDate.getDate();
-
-              return (
-                <TouchableOpacity 
-                  style={styles.eventCard} 
-                  activeOpacity={0.85}
-                  onPress={() => navigation.navigate('EventDetail', { event: item })}
-                >
-                  {item.imageUrl ? (
-                    <Image source={{ uri: item.imageUrl }} style={styles.eventImage} />
-                  ) : (
-                    <View style={styles.eventImagePlaceholder}>
-                      <MaterialCommunityIcons name="image" size={32} color={COLORS.outlineVariant} />
-                    </View>
-                  )}
-                  
-                  <View style={styles.eventDateBadge}>
-                    <Text style={styles.eventMonth}>{month}</Text>
-                    <Text style={styles.eventDay}>{day}</Text>
-                  </View>
-
-                  <View style={styles.eventInfo}>
-                    <Text style={styles.eventTitle} numberOfLines={1}>{item.title}</Text>
-                    <Text style={styles.eventMeta} numberOfLines={1}>
-                      <MaterialCommunityIcons name="map-marker-outline" size={12} /> {item.location}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              )
-            }}
-          />
+      <Animated.ScrollView 
+        style={styles.scroll} 
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingTop: HEADER_HEIGHT + insets.top + 10 } // Start feed below header
+        ]} 
+        showsVerticalScrollIndicator={false}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: true }
         )}
-
-        <Text style={styles.sectionTitle}>Recently Rescued</Text>
-        {/* ... (Keep your existing FlatList for recentAnimals here) ... */}
-        {recentAnimals.length === 0 ? (
-          <View style={styles.emptyState}>
-            <MaterialCommunityIcons name="paw-outline" size={40} color={COLORS.outlineVariant} />
-            <Text style={styles.emptyText}>No animals registered yet</Text>
+        scrollEventThrottle={16}
+      >
+        
+        <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
+          
+          {/* 🌟 GREETING */}
+          <View style={styles.section}>
+            <Text style={styles.greeting}>One More Friend</Text>
+            <Text style={styles.subGreeting}>Thousands More Fun! <Text style={{color: COLORS.pinkRed}}>✦</Text></Text>
+            <Text style={styles.greetingDesc}>
+              Having a pet means you have more joy, a new friend, a happy person who will always be with you.
+            </Text>
           </View>
-        ) : (
-          <FlatList
-            data={recentAnimals}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            keyExtractor={item => item.id}
-            contentContainerStyle={{ paddingRight: 20 }}
-            renderItem={({ item }) => {
-              const sc = statusColor(item.status);
-              return (
-                <TouchableOpacity style={styles.animalCard} activeOpacity={0.85} onPress={() => navigation.navigate('Browse')}>
-                  {item.imageUrl ? (
-                    <Image source={{ uri: item.imageUrl }} style={styles.animalImage} />
-                  ) : (
-                    <View style={[styles.animalImage, styles.animalImagePlaceholder]}>
-                      <MaterialCommunityIcons name="paw-outline" size={32} color={COLORS.outlineVariant} />
+
+          {/* 🌟 QUICK ACTIONS */}
+          <View style={styles.quickActions}>
+            <TouchableOpacity 
+              style={[styles.actionBtn, { backgroundColor: COLORS.surface }]} 
+              activeOpacity={0.8} 
+              onPress={() => navigation.navigate('Report')}
+            >
+              <MaterialCommunityIcons name="camera-plus" size={20} color={COLORS.primary} />
+              <Text style={[styles.actionBtnText, { color: COLORS.primary }]}>Report Stray</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={[styles.actionBtn, { backgroundColor: COLORS.primary }]} 
+              activeOpacity={0.8} 
+              onPress={() => navigation.navigate('Browse')}
+            >
+              <Text style={[styles.actionBtnText, { color: COLORS.surface }]}>Explore Now</Text>
+              <MaterialCommunityIcons name="chevron-right-circle" size={20} color={COLORS.surface} />
+            </TouchableOpacity>
+          </View>
+
+          {/* 🌟 EMERGENCY BANNER */}
+          <TouchableOpacity style={styles.emergencyBanner} activeOpacity={0.85}>
+            <View style={styles.emergencyLeft}>
+              <View style={styles.emergencyIconBg}>
+                <MaterialCommunityIcons name="alert-rhombus" size={24} color={COLORS.pinkRed} />
+              </View>
+              <View style={{ marginLeft: 12 }}>
+                <Text style={styles.emergencyTitle}>Emergency Rescue</Text>
+                <Text style={styles.emergencySubtitle}>Report an animal in immediate danger</Text>
+              </View>
+            </View>
+            <MaterialCommunityIcons name="chevron-right" size={24} color={COLORS.pinkRed} />
+          </TouchableOpacity>
+
+          {/* 🌟 EXCITING EVENTS */}
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionSubtitle}>What's new?</Text>
+            <Text style={styles.sectionTitle}>Exciting Events</Text>
+          </View>
+          
+          {upcomingEvents.length === 0 ? (
+            <View style={styles.emptyState}>
+              <MaterialCommunityIcons name="calendar-blank" size={40} color={COLORS.textMuted} />
+              <Text style={styles.emptyText}>No upcoming events right now.</Text>
+            </View>
+          ) : (
+            <FlatList
+              data={upcomingEvents}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              keyExtractor={item => item.id}
+              contentContainerStyle={{ paddingRight: 20, paddingBottom: 20 }}
+              renderItem={({ item }) => {
+                const eventDate = item.date?.toDate ? item.date.toDate() : new Date();
+                const month = eventDate.toLocaleString('default', { month: 'short' });
+                const day = eventDate.getDate();
+
+                return (
+                  <TouchableOpacity style={styles.card} activeOpacity={0.9} onPress={() => navigation.navigate('EventDetail', { event: item })}>
+                    <View style={styles.cardImageContainer}>
+                      {item.imageUrl ? (
+                        <Image source={{ uri: item.imageUrl }} style={styles.cardImage} />
+                      ) : (
+                        <View style={[styles.cardImage, styles.placeholderBg]}>
+                          <MaterialCommunityIcons name="calendar-star" size={32} color={COLORS.border} />
+                        </View>
+                      )}
+                      <View style={styles.dateBadge}>
+                        <Text style={styles.dateMonth}>{month}</Text>
+                        <Text style={styles.dateDay}>{day}</Text>
+                      </View>
                     </View>
-                  )}
-                  <View style={styles.animalInfo}>
-                    <View style={styles.animalRow}>
-                      <Text style={styles.animalName} numberOfLines={1}>{item.name}</Text>
+                    
+                    <View style={styles.cardInfo}>
+                      <Text style={styles.cardTitle} numberOfLines={1}>{item.title}</Text>
+                      <Text style={styles.cardSub} numberOfLines={1}>
+                        <MaterialCommunityIcons name="map-marker" size={12} /> {item.location}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                )
+              }}
+            />
+          )}
+
+          {/* 🌟 RECENTLY RESCUED */}
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionSubtitle}>Who's new?</Text>
+            <Text style={styles.sectionTitle}>Take A Look At Our Pets</Text>
+          </View>
+          
+          {recentAnimals.length === 0 ? (
+            <View style={styles.emptyState}>
+              <MaterialCommunityIcons name="paw-outline" size={40} color={COLORS.textMuted} />
+              <Text style={styles.emptyText}>No animals registered yet</Text>
+            </View>
+          ) : (
+            <FlatList
+              data={recentAnimals}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              keyExtractor={item => item.id}
+              contentContainerStyle={{ paddingRight: 20, paddingBottom: 20 }}
+              renderItem={({ item }) => {
+                const sc = statusColor(item.status);
+                return (
+                  <TouchableOpacity style={styles.card} activeOpacity={0.9} onPress={() => navigation.navigate('Browse')}>
+                    <View style={styles.cardImageContainer}>
+                      {item.imageUrl ? (
+                        <Image source={{ uri: item.imageUrl }} style={styles.cardImage} />
+                      ) : (
+                        <View style={[styles.cardImage, styles.placeholderBg]}>
+                          <MaterialCommunityIcons name="paw" size={32} color={COLORS.border} />
+                        </View>
+                      )}
+                    </View>
+                    
+                    <View style={styles.cardInfo}>
+                      <Text style={styles.cardTitle} numberOfLines={1}>{item.name || 'Unnamed Pet'}</Text>
+                      <View style={styles.cardDetailsRow}>
+                        <Text style={styles.cardDetailText}>Gene: <Text style={{fontWeight: '700', color: COLORS.textMuted}}>{item.species}</Text></Text>
+                        <Text style={styles.cardDetailDot}>•</Text>
+                        <Text style={styles.cardDetailText}>Loc: <Text style={{fontWeight: '700', color: COLORS.textMuted}}>{item.location || 'Unknown'}</Text></Text>
+                      </View>
+                      
                       <View style={[styles.statusBadge, { backgroundColor: sc.bg }]}>
                         <Text style={[styles.statusText, { color: sc.text }]}>{item.status}</Text>
                       </View>
                     </View>
-                    <Text style={styles.animalMeta} numberOfLines={1}>{item.species} · {item.location || 'Unknown'}</Text>
-                  </View>
-                </TouchableOpacity>
-              );
-            }}
-          />
-        )}
+                  </TouchableOpacity>
+                );
+              }}
+            />
+          )}
 
-        <Text style={styles.sectionTitle}>Get Involved</Text>
-        <View style={styles.communityActions}>
-          <TouchableOpacity style={styles.communityCard} activeOpacity={0.8}>
-            <View style={styles.communityIcon}>
-              <MaterialCommunityIcons name="map-marker-outline" size={24} color={COLORS.primary} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.communityLabel}>Find Help Near You</Text>
-              <Text style={styles.communitySub}>Locate vets and shelters</Text>
-            </View>
-            <MaterialCommunityIcons name="chevron-right" size={20} color={COLORS.outlineVariant} />
-          </TouchableOpacity>
+          {/* 🌟 GET INVOLVED */}
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionSubtitle}>Join the mission</Text>
+            <Text style={styles.sectionTitle}>Get Involved</Text>
+          </View>
 
-          {/* 🚀 NEW: Replaced Volunteer button with Event Proposal */}
-          <TouchableOpacity style={styles.communityCard} activeOpacity={0.8} onPress={() => navigation.navigate('ProposeEvent')}>
-            <View style={[styles.communityIcon, { backgroundColor: '#ffddb2' }]}>
-              <MaterialCommunityIcons name="calendar-star" size={24} color="#624000" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.communityLabel}>Host an Event</Text>
-              <Text style={styles.communitySub}>Submit an event for admin approval</Text>
-            </View>
-            <MaterialCommunityIcons name="chevron-right" size={20} color={COLORS.outlineVariant} />
-          </TouchableOpacity>
-        </View>
+          <View style={styles.communityActions}>
+            <TouchableOpacity style={styles.listCard} activeOpacity={0.8}>
+              <View style={[styles.listIconBg, { backgroundColor: '#E1F5FE' }]}>
+                <MaterialCommunityIcons name="map-marker-radius" size={24} color={COLORS.blueSea} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.listTitle}>Find Help Near You</Text>
+                <Text style={styles.listSub}>Locate vets and shelters</Text>
+              </View>
+              <MaterialCommunityIcons name="chevron-right" size={24} color={COLORS.primary} />
+            </TouchableOpacity>
 
-        <View style={{ height: 20 }} />
-      </ScrollView>
-    </SafeAreaView>
+            <TouchableOpacity style={styles.listCard} activeOpacity={0.8} onPress={() => navigation.navigate('ProposeEvent')}>
+              <View style={[styles.listIconBg, { backgroundColor: '#FFF3E0' }]}>
+                <MaterialCommunityIcons name="calendar-star" size={24} color={COLORS.orangeShine} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.listTitle}>Host an Event</Text>
+                <Text style={styles.listSub}>Submit an event for admin approval</Text>
+              </View>
+              <MaterialCommunityIcons name="chevron-right" size={24} color={COLORS.primary} />
+            </TouchableOpacity>
+          </View>
+
+          <View style={{ height: 40 }} />
+        </Animated.View>
+      </Animated.ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#faf9f6' },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, backgroundColor: 'rgba(250,249,246,0.92)', borderBottomWidth: 1, borderBottomColor: 'rgba(194,201,187,0.3)' },
-  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  logo: { fontWeight: '800', fontSize: 18, color: '#154212', letterSpacing: -0.3 },
-  notifBtn: { padding: 6, backgroundColor: 'rgba(255,255,255,0.6)', borderRadius: 999 },
-  scroll: { flex: 1 },
-  scrollContent: { paddingHorizontal: 20, paddingTop: 20 },
-  section: { marginBottom: 24 },
-  greeting: { fontSize: 28, fontWeight: '800', color: '#154212', letterSpacing: -0.5 },
-  subGreeting: { fontSize: 15, color: '#42493e', marginTop: 4 },
-  emergencyBanner: { backgroundColor: '#154212', borderRadius: 20, padding: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28, shadowColor: '#154212', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 6 },
-  emergencyLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
-  emergencyTitle: { color: '#fff', fontWeight: '800', fontSize: 16 },
-  emergencySubtitle: { color: 'rgba(255,255,255,0.75)', fontSize: 12, marginTop: 2 },
-  sectionTitle: { fontSize: 17, fontWeight: '700', color: '#154212', marginBottom: 14, letterSpacing: -0.2 },
-  quickActions: { flexDirection: 'row', gap: 12, marginBottom: 28 },
-  actionCard: { flex: 1, backgroundColor: 'rgba(255,255,255,0.6)', borderRadius: 20, padding: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.9)', shadowColor: '#1a1c1a', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
-  actionIcon: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
-  actionLabel: { fontSize: 14, fontWeight: '700', color: '#1a1c1a', marginBottom: 2 },
-  actionSub: { fontSize: 11, color: '#42493e' },
-  emptyState: { alignItems: 'center', paddingVertical: 32, gap: 8, marginBottom: 28 },
-  emptyText: { color: '#42493e', fontSize: 13 },
+  safe: { flex: 1, backgroundColor: COLORS.background },
   
-  // New Styles for Events
-  eventCard: { width: 240, backgroundColor: 'rgba(255,255,255,0.6)', borderRadius: 20, overflow: 'hidden', marginRight: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.9)', shadowColor: '#1a1c1a', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
-  eventImage: { width: '100%', height: 120 },
-  eventImagePlaceholder: { width: '100%', height: 120, backgroundColor: '#efeeeb', alignItems: 'center', justifyContent: 'center' },
-  eventDateBadge: { position: 'absolute', top: 10, left: 10, backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4, alignItems: 'center' },
-  eventMonth: { fontSize: 10, fontWeight: '800', color: '#ba1a1a', textTransform: 'uppercase' },
-  eventDay: { fontSize: 16, fontWeight: '800', color: '#1a1c1a' },
-  eventInfo: { padding: 14 },
-  eventTitle: { fontSize: 15, fontWeight: '700', color: '#1a1c1a', marginBottom: 4 },
-  eventMeta: { fontSize: 12, color: '#42493e', fontWeight: '500' },
+  // 🌟 Header Styles Adjusted for 2-Layer System
+  header: { 
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    paddingHorizontal: 20, 
+    backgroundColor: COLORS.background,
+    zIndex: 100 
+  },
+  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  logo: { fontWeight: '900', fontSize: 22, color: COLORS.primary, letterSpacing: -0.5 },
+  notifBtn: { position: 'relative', padding: 8 },
+  notifDot: { position: 'absolute', top: 8, right: 10, width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.pinkRed, borderWidth: 1.5, borderColor: COLORS.background },
+  
+  scroll: { flex: 1 },
+  scrollContent: { paddingHorizontal: 20, paddingBottom: 40 },
+  
+  // Greeting Section
+  section: { marginBottom: 24 },
+  greeting: { fontSize: 36, fontWeight: '900', color: COLORS.primary, letterSpacing: -1, lineHeight: 40 },
+  subGreeting: { fontSize: 22, fontWeight: '800', color: COLORS.primary, marginTop: 4 },
+  greetingDesc: { fontSize: 13, color: COLORS.textMuted, marginTop: 12, lineHeight: 20, fontWeight: '500', paddingRight: 20 },
+  
+  // Quick Actions (Buttons)
+  quickActions: { flexDirection: 'row', gap: 12, marginBottom: 28 },
+  actionBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, borderRadius: 999, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
+  actionBtnText: { fontSize: 14, fontWeight: '800', letterSpacing: 0.5 },
 
-  animalCard: { width: 160, backgroundColor: 'rgba(255,255,255,0.6)', borderRadius: 20, overflow: 'hidden', marginRight: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.9)', shadowColor: '#1a1c1a', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2, marginBottom: 28 },
-  animalImage: { width: '100%', height: 110 },
-  animalImagePlaceholder: { backgroundColor: '#efeeeb', alignItems: 'center', justifyContent: 'center' },
-  animalInfo: { padding: 10 },
-  animalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
-  animalName: { fontSize: 14, fontWeight: '700', color: '#154212', flex: 1, marginRight: 4 },
-  statusBadge: { borderRadius: 999, paddingHorizontal: 6, paddingVertical: 2 },
-  statusText: { fontSize: 9, fontWeight: '700', textTransform: 'capitalize' },
-  animalMeta: { fontSize: 11, color: '#42493e', marginBottom: 6, textTransform: 'capitalize' },
-  communityActions: { gap: 10, marginBottom: 8 },
-  communityCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f4f3f1', borderRadius: 16, padding: 16, gap: 14 },
-  communityIcon: { width: 44, height: 44, borderRadius: 999, backgroundColor: '#bcf0ae', alignItems: 'center', justifyContent: 'center' },
-  communityLabel: { fontSize: 14, fontWeight: '700', color: '#1a1c1a' },
-  communitySub: { fontSize: 12, color: '#42493e', marginTop: 1 },
+  // Emergency Banner
+  emergencyBanner: { backgroundColor: '#FFF', borderRadius: 20, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32, borderWidth: 1, borderColor: '#FFE4E1', shadowColor: COLORS.pinkRed, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.15, shadowRadius: 16, elevation: 4 },
+  emergencyLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+  emergencyIconBg: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#FFEBEE', alignItems: 'center', justifyContent: 'center' },
+  emergencyTitle: { color: COLORS.primary, fontWeight: '800', fontSize: 15 },
+  emergencySubtitle: { color: COLORS.textMuted, fontSize: 12, marginTop: 2, fontWeight: '500' },
+  
+  // Section Headers
+  sectionHeader: { marginBottom: 16 },
+  sectionSubtitle: { fontSize: 13, fontWeight: '700', color: COLORS.textMuted, marginBottom: 2 },
+  sectionTitle: { fontSize: 20, fontWeight: '900', color: COLORS.primary, letterSpacing: -0.5 },
+  
+  // Empty State (Adjusted for yellow bg)
+  emptyState: { alignItems: 'center', paddingVertical: 32, gap: 8, marginBottom: 24, backgroundColor: 'rgba(255,255,255,0.5)', borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.8)' },
+  emptyText: { color: COLORS.textMuted, fontSize: 13, fontWeight: '600' },
+  
+  // Monito Style Cards
+  card: { width: 180, backgroundColor: COLORS.surface, borderRadius: 20, marginRight: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 3 },
+  cardImageContainer: { width: '100%', height: 160, padding: 8 },
+  cardImage: { width: '100%', height: '100%', borderRadius: 12, resizeMode: 'cover' },
+  placeholderBg: { backgroundColor: COLORS.surfaceOff, alignItems: 'center', justifyContent: 'center' },
+  
+  // Card Text Info
+  cardInfo: { padding: 12, paddingTop: 4 },
+  cardTitle: { fontSize: 15, fontWeight: '800', color: COLORS.primary, marginBottom: 6 },
+  cardSub: { fontSize: 11, color: COLORS.textMuted, fontWeight: '600' },
+  
+  // Animal Specific Details
+  cardDetailsRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
+  cardDetailText: { fontSize: 10, color: COLORS.textMuted, fontWeight: '500' },
+  cardDetailDot: { fontSize: 10, color: COLORS.border, marginHorizontal: 6 },
+  statusBadge: { alignSelf: 'flex-start', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 },
+  statusText: { fontSize: 10, fontWeight: '800', textTransform: 'capitalize' },
+  
+  // Event Specific Details
+  dateBadge: { position: 'absolute', top: 16, right: 16, backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, alignItems: 'center' },
+  dateMonth: { fontSize: 9, fontWeight: '800', color: COLORS.pinkRed, textTransform: 'uppercase' },
+  dateDay: { fontSize: 14, fontWeight: '900', color: COLORS.primary },
+
+  // Get Involved Lists
+  communityActions: { gap: 12 },
+  listCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.surface, borderRadius: 20, padding: 16, gap: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.04, shadowRadius: 8, elevation: 2 },
+  listIconBg: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  listTitle: { fontSize: 15, fontWeight: '800', color: COLORS.primary, letterSpacing: -0.3 },
+  listSub: { fontSize: 12, color: COLORS.textMuted, marginTop: 2, fontWeight: '600' },
 });

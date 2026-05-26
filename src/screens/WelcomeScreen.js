@@ -1,17 +1,22 @@
 // src/screens/WelcomeScreen.js
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, StatusBar, Image, Animated } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context'; // 🚀 CHANGED IMPORT
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 
+// 🎨 "MONITO" COLOR PALETTE
 const COLORS = {
-  primary: '#154212',
-  primaryFixed: '#bcf0ae',
-  background: '#faf9f6',
+  primary: '#003459',       // Dark Blue
+  secondary: '#F7DBA7',     // Mon Yellow
+  background: '#FDFDFD',    // Neutral 00
+  surface: '#FFFFFF',       // Pure White
+  pinkRed: '#FF564F',
 };
 
 export default function WelcomeScreen({ navigation }) {
+  const insets = useSafeAreaInsets(); // 🚀 GRAB INSETS
+
   // Animation Values
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(40)).current;
@@ -44,23 +49,30 @@ export default function WelcomeScreen({ navigation }) {
       />
 
       {/* The Magic Gradient: 
-        Transparent at the top so the dog's face is clear.
-        Fades to a dark, rich green at the bottom for perfect text readability.
+        Transparent at the top so the photo is clear.
+        Fades to our deep Monito Primary Blue at the bottom for perfect text readability.
       */}
       <LinearGradient
-        colors={['transparent', 'rgba(10, 33, 9, 0.4)', '#081a07']}
-        locations={[0, 0.5, 1]}
+        colors={['transparent', 'rgba(0, 52, 89, 0.6)', '#003459']}
+        locations={[0, 0.4, 1]}
         style={styles.gradientOverlay}
       />
 
-      <SafeAreaView style={styles.safe}>
+      {/* 🚀 FIXED CONTAINER WITH MANUAL INSETS */}
+      <View style={[
+        styles.safe, 
+        { 
+          paddingTop: Math.max(insets.top, 16), 
+          paddingBottom: Math.max(insets.bottom, 24) 
+        }
+      ]}>
         {/* Animated Wrapper for all content */}
         <Animated.View style={[styles.content, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
           
-          {/* Top Branding (Pushed down slightly for balance) */}
+          {/* Top Branding */}
           <View style={styles.brandContainer}>
             <View style={styles.iconGlow}>
-              <MaterialCommunityIcons name="paw" size={32} color={COLORS.primaryFixed} />
+              <MaterialCommunityIcons name="paw" size={32} color={COLORS.secondary} />
             </View>
             <Text style={styles.brandText}>StrayConnect</Text>
           </View>
@@ -83,7 +95,7 @@ export default function WelcomeScreen({ navigation }) {
                 activeOpacity={0.85}
               >
                 <Text style={styles.primaryBtnText}>Get Started</Text>
-                <MaterialCommunityIcons name="arrow-right" size={20} color="#002201" />
+                <MaterialCommunityIcons name="arrow-right" size={20} color={COLORS.primary} />
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -97,7 +109,7 @@ export default function WelcomeScreen({ navigation }) {
           </View>
 
         </Animated.View>
-      </SafeAreaView>
+      </View>
     </View>
   );
 }
@@ -111,7 +123,7 @@ const styles = StyleSheet.create({
     position: 'absolute', 
     width: '100%', 
     height: '100%', 
-    opacity: 0.9 
+    opacity: 0.85 
   },
   gradientOverlay: { 
     position: 'absolute', 
@@ -124,9 +136,10 @@ const styles = StyleSheet.create({
   content: { 
     flex: 1, 
     justifyContent: 'space-between', 
-    padding: 24, 
-    paddingBottom: 32 
+    paddingHorizontal: 24, 
   },
+  
+  // Branding
   brandContainer: { 
     flexDirection: 'row', 
     alignItems: 'center', 
@@ -135,84 +148,92 @@ const styles = StyleSheet.create({
   },
   iconGlow: {
     padding: 10,
-    backgroundColor: 'rgba(188, 240, 174, 0.15)', // Faint glow behind the paw
+    backgroundColor: 'rgba(247, 219, 167, 0.15)', // Faint yellow glow
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(188, 240, 174, 0.3)',
+    borderColor: 'rgba(247, 219, 167, 0.3)',
   },
   brandText: { 
     fontSize: 26, 
-    fontWeight: '800', 
+    fontWeight: '900', 
     color: '#fff', 
     letterSpacing: -0.5 
   },
+  
+  // Action Section
   actionSection: { 
     gap: 16 
   },
   badge: {
     alignSelf: 'flex-start',
     backgroundColor: 'rgba(255,255,255,0.15)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     borderRadius: 999,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.3)',
     marginBottom: 8,
   },
   badgeText: {
-    color: '#e2e8f0',
+    color: COLORS.secondary,
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '800',
     letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
   title: { 
-    fontSize: 46, 
+    fontSize: 48, 
     fontWeight: '900', 
     color: '#fff', 
     letterSpacing: -1.5, 
-    lineHeight: 50, 
+    lineHeight: 52, 
     marginBottom: 4 
   },
   subtitle: { 
     fontSize: 16, 
-    color: 'rgba(255,255,255,0.7)', 
+    color: 'rgba(255,255,255,0.8)', 
     lineHeight: 24, 
-    marginBottom: 28,
-    paddingRight: 20, // Keeps text from hitting the very edge
+    marginBottom: 32,
+    fontWeight: '500',
+    paddingRight: 20, 
   },
+  
+  // Buttons
   buttonContainer: { 
     gap: 14 
   },
   primaryBtn: { 
-    backgroundColor: COLORS.primaryFixed, 
-    borderRadius: 999, 
-    paddingVertical: 18, 
+    backgroundColor: COLORS.secondary, 
+    borderRadius: 16, 
+    paddingVertical: 20, 
     flexDirection: 'row', 
     alignItems: 'center', 
     justifyContent: 'center', 
-    gap: 8,
-    shadowColor: COLORS.primaryFixed,
-    shadowOffset: { width: 0, height: 4 },
+    gap: 10,
+    shadowColor: COLORS.secondary,
+    shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.4,
     shadowRadius: 16,
     elevation: 8,
   },
   primaryBtnText: { 
-    color: '#002201', 
-    fontSize: 17, 
-    fontWeight: '800' 
+    color: COLORS.primary, 
+    fontSize: 18, 
+    fontWeight: '900',
+    letterSpacing: -0.3
   },
   secondaryBtn: { 
     backgroundColor: 'transparent', 
-    borderRadius: 999, 
+    borderRadius: 16, 
     paddingVertical: 18, 
     alignItems: 'center', 
     justifyContent: 'center', 
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)'
   },
   secondaryBtnText: { 
     color: '#fff', 
     fontSize: 16, 
-    fontWeight: '700' 
+    fontWeight: '800' 
   },
 });
