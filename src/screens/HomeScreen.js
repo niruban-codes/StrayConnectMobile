@@ -11,15 +11,15 @@ import { collection, query, limit, onSnapshot, where } from 'firebase/firestore'
 
 const { width } = Dimensions.get('window');
 
-// 🎨 UPDATED "MONITO" COLOR PALETTE (Yellow Background)
+// 🎨 UPDATED "MONITO" COLOR PALETTE
 const COLORS = {
   primary: '#003459',       // Dark Blue
-  background: '#F7DBA7',    // Mon Yellow - NEW MAIN BACKGROUND
+  background: '#F7DBA7',    // Mon Yellow
   surface: '#FFFFFF',       // Pure White
   surfaceOff: '#FDFDFD',    // Neutral 00
   border: '#EBEEEF',        // Neutral 10
   textDark: '#00171F',      // Neutral 100
-  textMuted: '#52616B',     // Darkened slightly for contrast against yellow
+  textMuted: '#52616B',     
   
   pinkRed: '#FF564F',
   greenLight: '#34C759',
@@ -27,7 +27,7 @@ const COLORS = {
   blueSea: '#00A7E7',
 };
 
-const HEADER_HEIGHT = 60; // Fixed height for our animated header
+const HEADER_HEIGHT = 60; 
 
 export default function HomeScreen({ navigation }) {
   const insets = useSafeAreaInsets(); 
@@ -54,7 +54,7 @@ export default function HomeScreen({ navigation }) {
 
   const headerTranslateY = clampedScrollY.interpolate({
     inputRange: [0, HEADER_HEIGHT],
-    outputRange: [0, -HEADER_HEIGHT], // Slides up completely
+    outputRange: [0, -HEADER_HEIGHT], 
     extrapolate: 'clamp',
   });
 
@@ -100,7 +100,7 @@ export default function HomeScreen({ navigation }) {
       case 'adopted':   return { bg: '#E8F5E9', text: COLORS.greenLight };
       case 'sheltered': return { bg: '#E1F5FE', text: COLORS.blueSea };
       case 'lost':      return { bg: '#FFEBEE', text: COLORS.pinkRed };
-      default:          return { bg: '#FFF3E0', text: COLORS.orangeShine };
+      default:          return { bg: '#FFF3E0', text: COLORS.orangeShine }; 
     }
   };
 
@@ -108,26 +108,36 @@ export default function HomeScreen({ navigation }) {
     <View style={styles.safe}>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent={true} />
 
-      {/* 🚀 LAYER 1: SOLID BACKGROUND FOR STATUS BAR (Keeps clock readable) */}
+      {/* 🚀 CUSTOM TOPOGRAPHIC BACKGROUND */}
+      <Image 
+        source={require('../../assets/images/app-bg.png')} 
+        style={styles.bgPattern} 
+      />
+
+      {/* 🚀 LAYER 1: SOLID BACKGROUND FOR STATUS BAR */}
       <View style={{
         position: 'absolute',
         top: 0, left: 0, right: 0,
         height: insets.top,
         backgroundColor: COLORS.background,
-        zIndex: 101 // HIGHEST Z-INDEX
+        zIndex: 101 
       }} />
 
-      {/* 🚀 LAYER 2: ANIMATED HEADER (Slides behind Layer 1) */}
+      {/* 🚀 LAYER 2: ANIMATED HEADER */}
       <Animated.View style={[
         styles.header, 
         { 
-          top: insets.top, // Starts exactly below Layer 1
+          top: insets.top, 
           height: HEADER_HEIGHT, 
           transform: [{ translateY: headerTranslateY }] 
         }
       ]}>
         <View style={styles.headerLeft}>
-          <MaterialCommunityIcons name="paw" size={28} color={COLORS.primary} />
+          {/* 🚀 CUSTOM APP LOGO */}
+          <Image 
+            source={require('../../assets/images/sc-logo.png')} 
+            style={styles.headerLogoIcon} 
+          />
           <Text style={styles.logo}>StrayConnect</Text>
         </View>
         <TouchableOpacity style={styles.notifBtn} onPress={() => navigation.navigate('Notifications')}>
@@ -140,7 +150,7 @@ export default function HomeScreen({ navigation }) {
         style={styles.scroll} 
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingTop: HEADER_HEIGHT + insets.top + 10 } // Start feed below header
+          { paddingTop: HEADER_HEIGHT + insets.top + 10 } 
         ]} 
         showsVerticalScrollIndicator={false}
         onScroll={Animated.event(
@@ -282,9 +292,10 @@ export default function HomeScreen({ navigation }) {
                     <View style={styles.cardInfo}>
                       <Text style={styles.cardTitle} numberOfLines={1}>{item.name || 'Unnamed Pet'}</Text>
                       <View style={styles.cardDetailsRow}>
-                        <Text style={styles.cardDetailText}>Gene: <Text style={{fontWeight: '700', color: COLORS.textMuted}}>{item.species}</Text></Text>
+                        {/* 🚀 Updated inline font families */}
+                        <Text style={styles.cardDetailText}>Gene: <Text style={{fontFamily: 'Urbanist_800ExtraBold', color: COLORS.textMuted}}>{item.species}</Text></Text>
                         <Text style={styles.cardDetailDot}>•</Text>
-                        <Text style={styles.cardDetailText}>Loc: <Text style={{fontWeight: '700', color: COLORS.textMuted}}>{item.location || 'Unknown'}</Text></Text>
+                        <Text style={styles.cardDetailText}>Loc: <Text style={{fontFamily: 'Urbanist_800ExtraBold', color: COLORS.textMuted}}>{item.location || 'Unknown'}</Text></Text>
                       </View>
                       
                       <View style={[styles.statusBadge, { backgroundColor: sc.bg }]}>
@@ -337,7 +348,15 @@ export default function HomeScreen({ navigation }) {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: COLORS.background },
   
-  // 🌟 Header Styles Adjusted for 2-Layer System
+  // 🚀 New Background Image Style
+  bgPattern: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    opacity: 0.15,
+    resizeMode: 'cover',
+  },
+
   header: { 
     position: 'absolute',
     left: 0,
@@ -346,11 +365,21 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between', 
     alignItems: 'center', 
     paddingHorizontal: 20, 
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.background, 
     zIndex: 100 
   },
-  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  logo: { fontWeight: '900', fontSize: 22, color: COLORS.primary, letterSpacing: -0.5 },
+  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  
+  // 🚀 Custom Logo Style
+  headerLogoIcon: { 
+    width: 28,  // Bumped up slightly so it matches the text nicely
+    height: 28, 
+    resizeMode: 'contain',
+    borderRadius: 6, // Optional: smooths the edges if it has a white background
+  },
+  
+  // 🚀 Typography Updates mapped to Poppins/Urbanist
+  logo: { fontFamily: 'Poppins_900Black', fontSize: 22, color: COLORS.primary, letterSpacing: -0.5 },
   notifBtn: { position: 'relative', padding: 8 },
   notifDot: { position: 'absolute', top: 8, right: 10, width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.pinkRed, borderWidth: 1.5, borderColor: COLORS.background },
   
@@ -359,30 +388,30 @@ const styles = StyleSheet.create({
   
   // Greeting Section
   section: { marginBottom: 24 },
-  greeting: { fontSize: 36, fontWeight: '900', color: COLORS.primary, letterSpacing: -1, lineHeight: 40 },
-  subGreeting: { fontSize: 22, fontWeight: '800', color: COLORS.primary, marginTop: 4 },
-  greetingDesc: { fontSize: 13, color: COLORS.textMuted, marginTop: 12, lineHeight: 20, fontWeight: '500', paddingRight: 20 },
+  greeting: { fontFamily: 'Poppins_900Black', fontSize: 36, color: COLORS.primary, letterSpacing: -1, lineHeight: 40 },
+  subGreeting: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 22, color: COLORS.primary, marginTop: 4 },
+  greetingDesc: { fontFamily: 'Urbanist_500Medium', fontSize: 13, color: COLORS.textMuted, marginTop: 12, lineHeight: 20, paddingRight: 20 },
   
   // Quick Actions (Buttons)
   quickActions: { flexDirection: 'row', gap: 12, marginBottom: 28 },
   actionBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, borderRadius: 999, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
-  actionBtnText: { fontSize: 14, fontWeight: '800', letterSpacing: 0.5 },
+  actionBtnText: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 14, letterSpacing: 0.5 },
 
   // Emergency Banner
   emergencyBanner: { backgroundColor: '#FFF', borderRadius: 20, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32, borderWidth: 1, borderColor: '#FFE4E1', shadowColor: COLORS.pinkRed, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.15, shadowRadius: 16, elevation: 4 },
   emergencyLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
   emergencyIconBg: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#FFEBEE', alignItems: 'center', justifyContent: 'center' },
-  emergencyTitle: { color: COLORS.primary, fontWeight: '800', fontSize: 15 },
-  emergencySubtitle: { color: COLORS.textMuted, fontSize: 12, marginTop: 2, fontWeight: '500' },
+  emergencyTitle: { fontFamily: 'Urbanist_800ExtraBold', color: COLORS.primary, fontSize: 15 },
+  emergencySubtitle: { fontFamily: 'Urbanist_500Medium', color: COLORS.textMuted, fontSize: 12, marginTop: 2 },
   
   // Section Headers
   sectionHeader: { marginBottom: 16 },
-  sectionSubtitle: { fontSize: 13, fontWeight: '700', color: COLORS.textMuted, marginBottom: 2 },
-  sectionTitle: { fontSize: 20, fontWeight: '900', color: COLORS.primary, letterSpacing: -0.5 },
+  sectionSubtitle: { fontFamily: 'Urbanist_600SemiBold', fontSize: 13, color: COLORS.textMuted, marginBottom: 2 },
+  sectionTitle: { fontFamily: 'Poppins_900Black', fontSize: 20, color: COLORS.primary, letterSpacing: -0.5 },
   
-  // Empty State (Adjusted for yellow bg)
-  emptyState: { alignItems: 'center', paddingVertical: 32, gap: 8, marginBottom: 24, backgroundColor: 'rgba(255,255,255,0.5)', borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.8)' },
-  emptyText: { color: COLORS.textMuted, fontSize: 13, fontWeight: '600' },
+  // Empty State
+  emptyState: { alignItems: 'center', paddingVertical: 32, gap: 8, marginBottom: 24, backgroundColor: 'rgba(255,255,255,0.7)', borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.9)' },
+  emptyText: { fontFamily: 'Urbanist_600SemiBold', color: COLORS.textMuted, fontSize: 13 },
   
   // Monito Style Cards
   card: { width: 180, backgroundColor: COLORS.surface, borderRadius: 20, marginRight: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 3 },
@@ -392,25 +421,25 @@ const styles = StyleSheet.create({
   
   // Card Text Info
   cardInfo: { padding: 12, paddingTop: 4 },
-  cardTitle: { fontSize: 15, fontWeight: '800', color: COLORS.primary, marginBottom: 6 },
-  cardSub: { fontSize: 11, color: COLORS.textMuted, fontWeight: '600' },
+  cardTitle: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 15, color: COLORS.primary, marginBottom: 6 },
+  cardSub: { fontFamily: 'Urbanist_600SemiBold', fontSize: 11, color: COLORS.textMuted },
   
   // Animal Specific Details
   cardDetailsRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
-  cardDetailText: { fontSize: 10, color: COLORS.textMuted, fontWeight: '500' },
+  cardDetailText: { fontFamily: 'Urbanist_500Medium', fontSize: 10, color: COLORS.textMuted },
   cardDetailDot: { fontSize: 10, color: COLORS.border, marginHorizontal: 6 },
   statusBadge: { alignSelf: 'flex-start', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 },
-  statusText: { fontSize: 10, fontWeight: '800', textTransform: 'capitalize' },
+  statusText: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 10, textTransform: 'capitalize' },
   
   // Event Specific Details
   dateBadge: { position: 'absolute', top: 16, right: 16, backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, alignItems: 'center' },
-  dateMonth: { fontSize: 9, fontWeight: '800', color: COLORS.pinkRed, textTransform: 'uppercase' },
-  dateDay: { fontSize: 14, fontWeight: '900', color: COLORS.primary },
+  dateMonth: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 9, color: COLORS.pinkRed, textTransform: 'uppercase' },
+  dateDay: { fontFamily: 'Poppins_900Black', fontSize: 14, color: COLORS.primary },
 
   // Get Involved Lists
   communityActions: { gap: 12 },
-  listCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.surface, borderRadius: 20, padding: 16, gap: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.04, shadowRadius: 8, elevation: 2 },
+  listCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.8)', borderRadius: 20, padding: 16, gap: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.04, shadowRadius: 8, elevation: 2 },
   listIconBg: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  listTitle: { fontSize: 15, fontWeight: '800', color: COLORS.primary, letterSpacing: -0.3 },
-  listSub: { fontSize: 12, color: COLORS.textMuted, marginTop: 2, fontWeight: '600' },
+  listTitle: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 15, color: COLORS.primary, letterSpacing: -0.3 },
+  listSub: { fontFamily: 'Urbanist_600SemiBold', fontSize: 12, color: COLORS.textMuted, marginTop: 2 },
 });

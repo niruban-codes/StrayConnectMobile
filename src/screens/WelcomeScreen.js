@@ -1,7 +1,7 @@
 // src/screens/WelcomeScreen.js
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, StatusBar, Image, Animated } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context'; // 🚀 CHANGED IMPORT
+import { useSafeAreaInsets } from 'react-native-safe-area-context'; 
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -15,7 +15,7 @@ const COLORS = {
 };
 
 export default function WelcomeScreen({ navigation }) {
-  const insets = useSafeAreaInsets(); // 🚀 GRAB INSETS
+  const insets = useSafeAreaInsets(); 
 
   // Animation Values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -72,7 +72,11 @@ export default function WelcomeScreen({ navigation }) {
           {/* Top Branding */}
           <View style={styles.brandContainer}>
             <View style={styles.iconGlow}>
-              <MaterialCommunityIcons name="paw" size={32} color={COLORS.secondary} />
+              {/* 🚀 LOGO ADDED HERE */}
+              <Image 
+                source={require('../../assets/images/sc-logo.png')} 
+                style={styles.logoImage} 
+              />
             </View>
             <Text style={styles.brandText}>StrayConnect</Text>
           </View>
@@ -153,9 +157,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(247, 219, 167, 0.3)',
   },
+  // 🚀 New Logo Style
+  logoImage: {
+    width: 32,
+    height: 32,
+    resizeMode: 'contain',
+    borderRadius: 6,
+  },
   brandText: { 
+    fontFamily: 'Poppins_900Black', // 🚀 Font Update
     fontSize: 26, 
-    fontWeight: '900', 
     color: '#fff', 
     letterSpacing: -0.5 
   },
@@ -175,26 +186,26 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   badgeText: {
+    fontFamily: 'Urbanist_800ExtraBold', // 🚀 Font Update
     color: COLORS.secondary,
     fontSize: 12,
-    fontWeight: '800',
     letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
   title: { 
+    fontFamily: 'Poppins_900Black', // 🚀 Font Update
     fontSize: 48, 
-    fontWeight: '900', 
     color: '#fff', 
     letterSpacing: -1.5, 
     lineHeight: 52, 
     marginBottom: 4 
   },
   subtitle: { 
+    fontFamily: 'Urbanist_500Medium', // 🚀 Font Update
     fontSize: 16, 
     color: 'rgba(255,255,255,0.8)', 
     lineHeight: 24, 
     marginBottom: 32,
-    fontWeight: '500',
     paddingRight: 20, 
   },
   
@@ -217,9 +228,9 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   primaryBtnText: { 
+    fontFamily: 'Urbanist_800ExtraBold', // 🚀 Font Update
     color: COLORS.primary, 
     fontSize: 18, 
-    fontWeight: '900',
     letterSpacing: -0.3
   },
   secondaryBtn: { 
@@ -232,8 +243,8 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.3)'
   },
   secondaryBtnText: { 
+    fontFamily: 'Urbanist_800ExtraBold', // 🚀 Font Update
     color: '#fff', 
     fontSize: 16, 
-    fontWeight: '800' 
   },
 });

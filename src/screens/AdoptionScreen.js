@@ -13,7 +13,7 @@ import { collection, onSnapshot, query, where } from 'firebase/firestore';
 const COLORS = {
   primary: '#003459',       // Dark Blue
   secondary: '#F7DBA7',     // Mon Yellow
-  background: '#FDFDFD',    // Neutral 00
+  background: '#F7DBA7',    // Match to Mon Yellow for the safe area
   surface: '#FFFFFF',       // Pure White
   border: '#EBEEEF',        // Neutral 10
   textDark: '#00171F',      // Neutral 100
@@ -110,6 +110,12 @@ export default function AdoptionScreen({ navigation }) {
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent={true} />
       
+      {/* 🚀 CUSTOM TOPOGRAPHIC BACKGROUND */}
+      <Image 
+        source={require('../../assets/images/app-bg.png')} 
+        style={styles.bgPattern} 
+      />
+      
       {/* 🌟 PREMIUM HEADER */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
@@ -140,7 +146,7 @@ export default function AdoptionScreen({ navigation }) {
             data={animals}
             renderItem={renderAnimal}
             keyExtractor={(item) => item.id}
-            contentContainerStyle={styles.listContent}
+            contentContainerStyle={[styles.listContent, { paddingBottom: Math.max(insets.bottom + 20, 40) }]}
             showsVerticalScrollIndicator={false}
           />
         )}
@@ -155,6 +161,15 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background, // Applies yellow to the safe area!
   },
   
+  // 🚀 Background Pattern
+  bgPattern: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    opacity: 0.15,
+    resizeMode: 'cover',
+  },
+  
   // Header
   header: {
     flexDirection: 'row',
@@ -166,14 +181,14 @@ const styles = StyleSheet.create({
   },
   backBtn: {
     padding: 8,
-    backgroundColor: COLORS.surface,
+    backgroundColor: 'rgba(255,255,255,0.6)', // Slight transparency for the textured bg
     borderRadius: 12,
     borderWidth: 1,
     borderColor: COLORS.border,
   },
   headerTitle: {
+    fontFamily: 'Poppins_900Black', // 🚀 Font Update
     fontSize: 18,
-    fontWeight: '900',
     color: COLORS.primary,
     letterSpacing: -0.5,
   },
@@ -185,22 +200,21 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   pageTitle: {
+    fontFamily: 'Poppins_900Black', // 🚀 Font Update
     fontSize: 32,
-    fontWeight: '900',
     color: COLORS.primary,
     letterSpacing: -1,
   },
   pageSubtitle: {
+    fontFamily: 'Urbanist_600SemiBold', // 🚀 Font Update
     fontSize: 14,
     color: COLORS.textMuted,
-    fontWeight: '600',
     marginTop: 4,
   },
 
   // List content
   listContent: {
     paddingHorizontal: 20,
-    paddingBottom: 40,
     gap: 16,
   },
 
@@ -245,8 +259,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   animalName: {
+    fontFamily: 'Urbanist_800ExtraBold', // 🚀 Font Update
     fontSize: 17,
-    fontWeight: '800',
     color: COLORS.primary,
     marginBottom: 4,
     letterSpacing: -0.3,
@@ -258,9 +272,9 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   animalSpecies: {
+    fontFamily: 'Urbanist_600SemiBold', // 🚀 Font Update
     fontSize: 13,
     color: COLORS.textMuted,
-    fontWeight: '600',
     textTransform: 'capitalize',
   },
   
@@ -272,8 +286,8 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   statusText: {
+    fontFamily: 'Urbanist_800ExtraBold', // 🚀 Font Update
     fontSize: 10,
-    fontWeight: '800',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -293,22 +307,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 60,
     marginHorizontal: 20,
-    backgroundColor: COLORS.surface,
+    backgroundColor: 'rgba(255,255,255,0.4)', // Slightly transparent to show bg texture
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: 'rgba(255,255,255,0.7)',
   },
   emptyTitle: {
+    fontFamily: 'Poppins_900Black', // 🚀 Font Update
     fontSize: 18,
-    fontWeight: '800',
     color: COLORS.primary,
     marginTop: 16,
   },
   emptySubtitle: {
+    fontFamily: 'Urbanist_600SemiBold', // 🚀 Font Update
     fontSize: 13,
     color: COLORS.textMuted,
     textAlign: 'center',
-    fontWeight: '500',
     marginTop: 8,
     paddingHorizontal: 20,
   },

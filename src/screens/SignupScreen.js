@@ -2,15 +2,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   View, Text, TextInput, TouchableOpacity, StyleSheet, 
-  KeyboardAvoidingView, Platform, ActivityIndicator, Alert, ScrollView, Animated, StatusBar
+  KeyboardAvoidingView, Platform, ActivityIndicator, Alert, ScrollView, Animated, StatusBar, Image
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context'; // 🚀 IMPORT INSETS
+import { useSafeAreaInsets } from 'react-native-safe-area-context'; 
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { createUserWithEmailAndPassword, updateProfile, sendEmailVerification } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../../firebase';
 
-// 🎨 "MONITO" COLOR PALETTE (Yellow Background Theme)
+// 🎨 "MONITO" COLOR PALETTE
 const COLORS = {
   primary: '#003459',       // Dark Blue
   background: '#F7DBA7',    // Mon Yellow - MAIN BACKGROUND
@@ -22,11 +22,16 @@ const COLORS = {
 };
 
 export default function SignupScreen({ navigation }) {
-  const insets = useSafeAreaInsets(); // 🚀 GRAB INSETS
+  const insets = useSafeAreaInsets(); 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  
+  // 🚀 NEW: State for password visibility toggles
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   const [loading, setLoading] = useState(false);
   const [passwordError, setPasswordError] = useState('');
 
@@ -89,7 +94,7 @@ export default function SignupScreen({ navigation }) {
         name: name,
         email: email,
         role: 'public',
-        isEmailVerified: false, // Flag for future use
+        isEmailVerified: false, 
         createdAt: new Date()
       });
 
@@ -101,10 +106,7 @@ export default function SignupScreen({ navigation }) {
         'Your account is ready. We have sent a verification link to your email.'
       );
 
-      // App.js will automatically detect the user and switch to the Main Tabs!
-
     } catch (err) {
-      // Handle Firebase specific errors gracefully
       if (err.code === 'auth/email-already-in-use') {
         Alert.alert('Email taken', 'An account already exists with this email.');
       } else if (err.code === 'auth/invalid-email') {
@@ -118,16 +120,21 @@ export default function SignupScreen({ navigation }) {
   };
 
   return (
-    // 🚀 USE STANDARD VIEW FOR FULL COLOR COVERAGE Behind Status Bar
     <View style={styles.safe}>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent={true} />
+      
+      {/* 🚀 CUSTOM TOPOGRAPHIC BACKGROUND */}
+      <Image 
+        source={require('../../assets/images/app-bg.png')} 
+        style={styles.bgPattern} 
+      />
       
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
         style={styles.container}
       >
         
-        {/* 🚀 APPLY TOP INSET MANUALLY */}
+        {/* Floating Back Button */}
         <TouchableOpacity 
           style={[styles.backBtn, { top: Math.max(insets.top + 16, 16) }]} 
           onPress={() => navigation.goBack()}
@@ -141,7 +148,7 @@ export default function SignupScreen({ navigation }) {
             styles.scrollContent, 
             { 
               paddingTop: insets.top + 80,
-              paddingBottom: Math.max(insets.bottom + 20, 40) // 🚀 ADD BOTTOM INSET FOR ACCESSIBLE SCROLLING
+              paddingBottom: Math.max(insets.bottom + 20, 40) 
             }
           ]}
         >
@@ -149,10 +156,13 @@ export default function SignupScreen({ navigation }) {
           <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
             
             <View style={styles.headerBox}>
-              <View style={styles.iconBg}>
-                <MaterialCommunityIcons name="account-heart" size={32} color={COLORS.surface} />
+              {/* 🚀 MOVED ICON TO THE RIGHT INLINE WITH TITLE */}
+              <View style={styles.titleRow}>
+                <Text style={styles.title}>Join the Network</Text>
+                <View style={styles.iconBg}>
+                  <MaterialCommunityIcons name="account-heart" size={28} color={COLORS.surface} />
+                </View>
               </View>
-              <Text style={styles.title}>Join the Network</Text>
               <Text style={styles.subtitle}>Create an account to start rescuing and tracking your local impact.</Text>
             </View>
 
@@ -198,10 +208,18 @@ export default function SignupScreen({ navigation }) {
                     style={styles.input} 
                     placeholder="Create a strong password" 
                     placeholderTextColor={COLORS.textMuted}
-                    secureTextEntry 
+                    secureTextEntry={!showPassword} 
                     value={password} 
                     onChangeText={setPassword} 
                   />
+                  {/* 🚀 Eye Icon Toggle */}
+                  <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                    <MaterialCommunityIcons 
+                      name={showPassword ? "eye-outline" : "eye-off-outline"} 
+                      size={20} 
+                      color={COLORS.textMuted} 
+                    />
+                  </TouchableOpacity>
                 </View>
                 {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
               </View>
@@ -215,10 +233,18 @@ export default function SignupScreen({ navigation }) {
                     style={styles.input} 
                     placeholder="Type password again" 
                     placeholderTextColor={COLORS.textMuted}
-                    secureTextEntry 
+                    secureTextEntry={!showConfirmPassword} 
                     value={confirmPassword} 
                     onChangeText={setConfirmPassword} 
                   />
+                  {/* 🚀 Eye Icon Toggle */}
+                  <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
+                    <MaterialCommunityIcons 
+                      name={showConfirmPassword ? "eye-outline" : "eye-off-outline"} 
+                      size={20} 
+                      color={COLORS.textMuted} 
+                    />
+                  </TouchableOpacity>
                 </View>
               </View>
 
@@ -250,26 +276,41 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollContent: { flexGrow: 1, paddingHorizontal: 24 },
   
-  // Back Button (Floating above scroll)
-  backBtn: { position: 'absolute', left: 24, padding: 10, backgroundColor: 'rgba(255,255,255,0.6)', borderRadius: 14, borderWidth: 1, borderColor: COLORS.border, zIndex: 10 },
+  // 🚀 Background Pattern
+  bgPattern: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    opacity: 0.15,
+    resizeMode: 'cover',
+  },
+
+  // Back Button
+  backBtn: { position: 'absolute', left: 24, padding: 10, backgroundColor: 'rgba(255,255,255,0.7)', borderRadius: 14, borderWidth: 1, borderColor: COLORS.border, zIndex: 10 },
   
   // Header section
   headerBox: { marginBottom: 32 },
-  iconBg: { width: 56, height: 56, borderRadius: 16, backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center', marginBottom: 20, transform: [{ rotate: '-10deg' }] },
-  title: { fontSize: 36, fontWeight: '900', color: COLORS.primary, marginBottom: 8, letterSpacing: -1 },
-  subtitle: { fontSize: 16, color: COLORS.primary, fontWeight: '600', opacity: 0.8, lineHeight: 22 },
+  
+  // 🚀 NEW: Title Row to position icon on the right
+  titleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 },
+  title: { flex: 1, fontFamily: 'Poppins_900Black', fontSize: 36, color: COLORS.primary, letterSpacing: -1, lineHeight: 40 },
+  iconBg: { width: 48, height: 48, borderRadius: 14, backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center', transform: [{ rotate: '10deg' }] }, // Tilted the other way!
+  
+  subtitle: { fontFamily: 'Urbanist_600SemiBold', fontSize: 16, color: COLORS.primary, opacity: 0.8, lineHeight: 22 },
   
   // Form
   form: { gap: 20 },
   inputWrapper: { gap: 8 },
-  label: { fontSize: 14, fontWeight: '800', color: COLORS.primary, marginLeft: 4, letterSpacing: -0.3 },
-  inputContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.surface, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 16, borderWidth: 1, borderColor: COLORS.border, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.03, shadowRadius: 8, elevation: 2 },
+  label: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 14, color: COLORS.primary, marginLeft: 4, letterSpacing: -0.3 },
+  
+  // 🚀 FIXED: Slimmer Input Container (paddingVertical reduced to 12)
+  inputContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.surface, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 12, borderWidth: 1, borderColor: COLORS.border, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.03, shadowRadius: 8, elevation: 2 },
   inputError: { borderColor: COLORS.error, borderWidth: 1.5 },
-  input: { flex: 1, marginLeft: 12, fontSize: 15, fontWeight: '600', color: COLORS.textDark },
-  errorText: { color: COLORS.error, fontSize: 12, marginLeft: 4, marginTop: 2, lineHeight: 16, fontWeight: '600' },
+  input: { flex: 1, marginLeft: 12, marginRight: 8, fontFamily: 'Urbanist_600SemiBold', fontSize: 15, color: COLORS.textDark, height: 36 }, // Added explicit height to standardize cross-platform
+  errorText: { fontFamily: 'Urbanist_600SemiBold', color: COLORS.error, fontSize: 12, marginLeft: 4, marginTop: 2, lineHeight: 16 },
   
   // Submit Button
   submitBtn: { backgroundColor: COLORS.primary, borderRadius: 16, paddingVertical: 20, alignItems: 'center', marginTop: 16, shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.2, shadowRadius: 12, elevation: 5 },
   submitBtnDisabled: { opacity: 0.7 },
-  submitText: { color: COLORS.surface, fontSize: 16, fontWeight: '900', letterSpacing: -0.3 },
+  submitText: { fontFamily: 'Urbanist_800ExtraBold', color: COLORS.surface, fontSize: 16, letterSpacing: -0.3 },
 });

@@ -2,19 +2,20 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   View, Text, TouchableOpacity, StyleSheet, 
-  StatusBar, Alert, Image, ActivityIndicator, Animated 
+  StatusBar, Alert, Image, ActivityIndicator, Animated, ScrollView 
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context'; // 🚀 IMPORT INSETS
+import { useSafeAreaInsets } from 'react-native-safe-area-context'; 
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { signOut, sendEmailVerification } from 'firebase/auth';
+import { sendEmailVerification } from 'firebase/auth';
 import { db, auth } from '../../firebase';
 import { collection, query, onSnapshot, where, doc, updateDoc, or } from 'firebase/firestore';
 
-// 🎨 "MONITO" COLOR PALETTE (Yellow Background Theme)
+// 🎨 "MONITO" COLOR PALETTE
 const COLORS = {
-  primary: '#003459',       // Dark Blue
-  background: '#F7DBA7',    // Mon Yellow - MAIN BACKGROUND
-  surface: '#FFFFFF',       // Pure White
+  primary: '#003459',       
+  background: '#F7DBA7',    
+  surface: '#FFFFFF',       
+  inputFill: '#F8F9FA',     // 🚀 NEW: Clean grey for card inner elements!
   border: 'rgba(0, 52, 89, 0.1)', 
   textDark: '#00171F',      
   textMuted: '#52616B',     
@@ -25,9 +26,8 @@ const COLORS = {
   blueSea: '#00A7E7',
 };
 
-const HEADER_HEIGHT = 60; // Fixed height for our animated header
+const HEADER_HEIGHT = 60; 
 
-// 🚀 UPDATED: Mapped to Monito State Colors
 const statusStyle = (status) => {
   switch (status) {
     case 'resolved':    return { bg: '#E8F5E9', text: COLORS.greenLight, label: 'Resolved' };
@@ -38,7 +38,7 @@ const statusStyle = (status) => {
 };
 
 export default function ProfileScreen({ navigation }) {
-  const insets = useSafeAreaInsets(); // 🚀 GRAB INSETS
+  const insets = useSafeAreaInsets(); 
 
   const [reports, setReports] = useState([]);
   const [animalCount, setAnimalCount] = useState(0);
@@ -49,14 +49,10 @@ export default function ProfileScreen({ navigation }) {
   const user = auth.currentUser;
   const isVerified = user?.emailVerified;
 
-  // 🚀 ENTRANCE ANIMATION VALUES
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
-
-  // 🚀 SCROLLING HEADER ANIMATION VALUES
   const scrollY = useRef(new Animated.Value(0)).current;
   
-  // This clamp prevents iOS "bounce" from glitching the header
   const clampedScrollY = Animated.diffClamp(
     scrollY.interpolate({
       inputRange: [0, 10000],
@@ -67,15 +63,13 @@ export default function ProfileScreen({ navigation }) {
     HEADER_HEIGHT
   );
 
-  // Translates the header from 0 (visible) to -60 (hidden)
   const headerTranslateY = clampedScrollY.interpolate({
     inputRange: [0, HEADER_HEIGHT],
-    outputRange: [0, -HEADER_HEIGHT], // Slides up completely
+    outputRange: [0, -HEADER_HEIGHT],
     extrapolate: 'clamp',
   });
 
   useEffect(() => {
-    // Entrance Animation
     Animated.parallel([
       Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
       Animated.spring(slideAnim, { toValue: 0, friction: 8, tension: 40, useNativeDriver: true })
@@ -163,13 +157,6 @@ export default function ProfileScreen({ navigation }) {
     );
   };
 
-  const handleSignOut = () => {
-    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Sign Out', style: 'destructive', onPress: async () => await signOut(auth) },
-    ]);
-  };
-
   const handleResendVerification = async () => {
     try {
       await sendEmailVerification(user);
@@ -180,33 +167,38 @@ export default function ProfileScreen({ navigation }) {
   };
 
   return (
-    // 🚀 USE STANDARD VIEW (SafeAreaView removed!)
     <View style={styles.safe}>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent={true} />
 
-      {/* 🚀 LAYER 1: SOLID BACKGROUND FOR STATUS BAR */}
+      <Image 
+        source={require('../../assets/images/app-bg.png')} 
+        style={styles.bgPattern} 
+      />
+
       <View style={{
         position: 'absolute',
         top: 0, left: 0, right: 0,
         height: insets.top,
         backgroundColor: COLORS.background,
-        zIndex: 101 // HIGHEST Z-INDEX
+        zIndex: 101 
       }} />
 
-      {/* 🚀 LAYER 2: ANIMATED HEADER (Slides behind Layer 1) */}
       <Animated.View style={[
         styles.header, 
         { 
-          top: insets.top, // Starts exactly below Layer 1
+          top: insets.top, 
           height: HEADER_HEIGHT, 
           transform: [{ translateY: headerTranslateY }] 
         }
       ]}>
         <View style={styles.headerLeft}>
-          <MaterialCommunityIcons name="paw" size={24} color={COLORS.primary} />
+          <Image 
+            source={require('../../assets/images/sc-logo.png')} 
+            style={styles.headerLogoIcon} 
+          />
           <Text style={styles.headerTitle}>Profile</Text>
         </View>
-        <TouchableOpacity style={styles.headerBtn}>
+        <TouchableOpacity style={styles.headerBtn} onPress={() => navigation.navigate('Settings')}>
           <MaterialCommunityIcons name="cog-outline" size={22} color={COLORS.primary} />
         </TouchableOpacity>
       </Animated.View>
@@ -215,7 +207,7 @@ export default function ProfileScreen({ navigation }) {
         style={styles.scroll} 
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingTop: HEADER_HEIGHT + insets.top + 20 } // 🚀 Push scroll content down
+          { paddingTop: HEADER_HEIGHT + insets.top + 20 }
         ]} 
         showsVerticalScrollIndicator={false}
         onScroll={Animated.event(
@@ -225,10 +217,8 @@ export default function ProfileScreen({ navigation }) {
         scrollEventThrottle={16}
       >
         
-        {/* 🚀 ANIMATED WRAPPER */}
         <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
           
-          {/* 🌟 PROFILE SECTION */}
           <View style={styles.profileSection}>
             <View style={styles.avatarContainer}>
               <View style={styles.avatar}>
@@ -253,7 +243,6 @@ export default function ProfileScreen({ navigation }) {
               </TouchableOpacity>
             )}
 
-            {/* 🌟 STATS ROW */}
             <View style={styles.statsRow}>
               <View style={styles.statBox}>
                 <Text style={styles.statNumber}>{reports.length}</Text>
@@ -272,7 +261,6 @@ export default function ProfileScreen({ navigation }) {
             </View>
           </View>
 
-          {/* 🌟 DIGITAL PASSPORTS */}
           <View style={styles.sectionHeaderRow}>
             <Text style={styles.sectionTitle}>Digital Passports</Text>
             <TouchableOpacity style={styles.addBtn} onPress={() => navigation.navigate('RegisterPet')}>
@@ -359,7 +347,6 @@ export default function ProfileScreen({ navigation }) {
             ))
           )}
 
-          {/* 🌟 MY REPORTS */}
           <Text style={[styles.sectionTitle, { marginTop: 24 }]}>My Reports & Tasks</Text>
           {reports.length === 0 ? (
             <View style={styles.emptyState}>
@@ -399,12 +386,6 @@ export default function ProfileScreen({ navigation }) {
               );
             })
           )}
-
-          <TouchableOpacity style={styles.signOutBtn} onPress={handleSignOut} activeOpacity={0.8}>
-            <MaterialCommunityIcons name="logout" size={18} color={COLORS.pinkRed} />
-            <Text style={styles.signOutText}>Sign Out</Text>
-          </TouchableOpacity>
-
         </Animated.View>
       </Animated.ScrollView>
     </View>
@@ -414,7 +395,14 @@ export default function ProfileScreen({ navigation }) {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: COLORS.background },
   
-  // 🌟 Absolute Header for Collapsing Effect
+  bgPattern: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    opacity: 0.15,
+    resizeMode: 'cover',
+  },
+
   header: { 
     position: 'absolute',
     left: 0,
@@ -426,69 +414,68 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background, 
     zIndex: 100 
   },
-  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  headerTitle: { fontSize: 18, fontWeight: '900', color: COLORS.primary, letterSpacing: -0.5 },
+  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  
+  headerLogoIcon: { 
+    width: 28, 
+    height: 28, 
+    resizeMode: 'contain',
+    borderRadius: 6,
+  },
+
+  headerTitle: { fontFamily: 'Poppins_900Black', fontSize: 18, color: COLORS.primary, letterSpacing: -0.5 },
   headerBtn: { padding: 8, backgroundColor: 'rgba(255,255,255,0.6)', borderRadius: 12, borderWidth: 1, borderColor: COLORS.border },
   
   scroll: { flex: 1 },
-  // inline padding applied in the component!
   scrollContent: { paddingHorizontal: 20, paddingBottom: 40 },
   
-  // Profile Section
   profileSection: { alignItems: 'center', marginBottom: 32 },
   avatarContainer: { position: 'relative', marginBottom: 16 },
   avatar: { width: 96, height: 96, borderRadius: 32, backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center', shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.2, shadowRadius: 16, elevation: 5 },
-  avatarText: { fontSize: 40, fontWeight: '900', color: COLORS.surface },
+  avatarText: { fontFamily: 'Poppins_900Black', fontSize: 40, color: COLORS.surface },
   verifiedDot: { position: 'absolute', bottom: -4, right: -4, backgroundColor: COLORS.background, borderRadius: 999, padding: 2 },
   
-  userName: { fontSize: 26, fontWeight: '900', color: COLORS.primary, letterSpacing: -0.5, marginBottom: 4 },
-  userEmail: { fontSize: 14, color: COLORS.textMuted, fontWeight: '600', marginBottom: 16 },
+  userName: { fontFamily: 'Poppins_900Black', fontSize: 26, color: COLORS.primary, letterSpacing: -0.5, marginBottom: 4 },
+  userEmail: { fontFamily: 'Urbanist_600SemiBold', fontSize: 14, color: COLORS.textMuted, marginBottom: 16 },
   
   unverifiedBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#FFEBEE', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, marginBottom: 20 },
-  unverifiedText: { fontSize: 12, fontWeight: '800', color: COLORS.pinkRed },
+  unverifiedText: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 12, color: COLORS.pinkRed },
   
-  // Stats Row
-  statsRow: { flexDirection: 'row', backgroundColor: COLORS.surface, borderRadius: 20, padding: 16, width: '100%', borderWidth: 1, borderColor: COLORS.border, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.03, shadowRadius: 8, elevation: 2 },
+  statsRow: { flexDirection: 'row', backgroundColor: COLORS.surface, borderRadius: 20, padding: 16, marginTop: 20, width: '100%', borderWidth: 1, borderColor: COLORS.border, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.03, shadowRadius: 8, elevation: 2 },
   statBox: { flex: 1, alignItems: 'center' },
   statDivider: { width: 1, backgroundColor: COLORS.border, marginVertical: 4 },
-  statNumber: { fontSize: 24, fontWeight: '900', color: COLORS.primary },
-  statLabel: { fontSize: 12, color: COLORS.textMuted, fontWeight: '600', marginTop: 2 },
+  statNumber: { fontFamily: 'Poppins_900Black', fontSize: 24, color: COLORS.primary },
+  statLabel: { fontFamily: 'Urbanist_600SemiBold', fontSize: 12, color: COLORS.textMuted, marginTop: 2 },
   
-  // Section Headers
   sectionHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  sectionTitle: { fontSize: 20, fontWeight: '900', color: COLORS.primary, letterSpacing: -0.5, marginBottom: 12 },
+  sectionTitle: { fontFamily: 'Poppins_900Black', fontSize: 20, color: COLORS.primary, letterSpacing: -0.5, marginBottom: 12 },
   addBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.primary, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12, gap: 4 },
-  addBtnText: { color: COLORS.surface, fontSize: 13, fontWeight: '800' },
+  addBtnText: { fontFamily: 'Urbanist_800ExtraBold', color: COLORS.surface, fontSize: 13 },
   
-  // Empty States
   emptyState: { alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.5)', padding: 32, borderRadius: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.8)', marginBottom: 24 },
-  emptyTitle: { fontSize: 16, fontWeight: '800', color: COLORS.primary, marginTop: 12, marginBottom: 6 },
-  emptySub: { fontSize: 13, color: COLORS.textMuted, textAlign: 'center', lineHeight: 20, fontWeight: '500' },
+  emptyTitle: { fontFamily: 'Poppins_900Black', fontSize: 16, color: COLORS.primary, marginTop: 12, marginBottom: 6 },
+  emptySub: { fontFamily: 'Urbanist_600SemiBold', fontSize: 13, color: COLORS.textMuted, textAlign: 'center', lineHeight: 20 },
   
-  // Passport Cards
   passportCard: { backgroundColor: COLORS.surface, borderRadius: 24, padding: 16, marginBottom: 20, borderWidth: 1, borderColor: COLORS.border, shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.04, shadowRadius: 12, elevation: 3 },
   passportHeader: { flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 16 },
-  passportImageContainer: { width: 64, height: 64, borderRadius: 18, backgroundColor: COLORS.background, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
+  // 🚀 FIXED: Swapped from COLORS.background to COLORS.inputFill for the photo box
+  passportImageContainer: { width: 64, height: 64, borderRadius: 18, backgroundColor: COLORS.inputFill, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
   passportImage: { width: '100%', height: '100%' },
   passportInfo: { flex: 1 },
-  petName: { fontSize: 18, fontWeight: '900', color: COLORS.primary, marginBottom: 2, letterSpacing: -0.3 },
-  petDetails: { fontSize: 12, color: COLORS.textMuted, textTransform: 'capitalize', marginBottom: 8, fontWeight: '600' },
+  petName: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 18, color: COLORS.primary, marginBottom: 2, letterSpacing: -0.3 },
+  petDetails: { fontFamily: 'Urbanist_600SemiBold', fontSize: 12, color: COLORS.textMuted, textTransform: 'capitalize', marginBottom: 8 },
   trustBadge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, gap: 4, alignSelf: 'flex-start' },
-  trustText: { fontSize: 10, fontWeight: '800' },
+  trustText: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 10 },
   
   actionHub: { flexDirection: 'row', gap: 8, borderTopWidth: 1, borderTopColor: COLORS.border, paddingTop: 16 },
-  actionBtn: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 12, backgroundColor: COLORS.background, borderRadius: 12, gap: 6 },
-  actionBtnText: { fontSize: 12, fontWeight: '800', color: COLORS.primary },
+  // 🚀 FIXED: Swapped from COLORS.background to COLORS.inputFill for the buttons
+  actionBtn: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 12, backgroundColor: COLORS.inputFill, borderRadius: 12, gap: 6 },
+  actionBtnText: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 12, color: COLORS.primary },
   
-  // Report Cards
   reportCard: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: COLORS.surface, borderRadius: 20, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: COLORS.border, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.03, shadowRadius: 8, elevation: 2 },
   reportIconBox: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  reportTitle: { fontSize: 15, fontWeight: '800', color: COLORS.primary, marginBottom: 4, textTransform: 'capitalize', letterSpacing: -0.3 },
-  reportMeta: { fontSize: 12, color: COLORS.textMuted, fontWeight: '500' },
+  reportTitle: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 15, color: COLORS.primary, marginBottom: 4, textTransform: 'capitalize', letterSpacing: -0.3 },
+  reportMeta: { fontFamily: 'Urbanist_500Medium', fontSize: 12, color: COLORS.textMuted },
   statusBadge: { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 },
-  statusText: { fontSize: 10, fontWeight: '800', letterSpacing: 0.5 },
-  
-  // Sign Out
-  signOutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: COLORS.surface, borderRadius: 16, paddingVertical: 16, marginTop: 32, borderWidth: 1, borderColor: '#FFEBEE' },
-  signOutText: { fontSize: 15, fontWeight: '800', color: COLORS.pinkRed },
+  statusText: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 10, letterSpacing: 0.5 },
 });

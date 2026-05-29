@@ -2,16 +2,16 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   View, Text, StyleSheet, TouchableOpacity, 
-  Alert, ActivityIndicator, StatusBar, Animated 
+  Alert, ActivityIndicator, StatusBar, Animated, Image 
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context'; // 🚀 IMPORT INSETS
+import { useSafeAreaInsets } from 'react-native-safe-area-context'; 
 import MapView, { Marker } from 'react-native-maps';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
 import { db, auth } from '../../firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
-// 🎨 "MONITO" COLOR PALETTE (Yellow Background Theme)
+// 🎨 "MONITO" COLOR PALETTE 
 const COLORS = {
   primary: '#003459',       // Dark Blue
   background: '#F7DBA7',    // Mon Yellow
@@ -28,7 +28,7 @@ const COLORS = {
 const GOOGLE_PLACES_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY; 
 
 export default function SightingMapScreen({ route, navigation }) {
-  const insets = useSafeAreaInsets(); // 🚀 GRAB INSETS
+  const insets = useSafeAreaInsets(); 
   const { animal } = route.params; 
   const mapRef = useRef(null); 
   
@@ -117,9 +117,14 @@ export default function SightingMapScreen({ route, navigation }) {
   };
   
   return (
-    // 🚀 REMOVED SafeAreaView, Using standard View
     <View style={styles.safe}>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent={true} />
+
+      {/* 🚀 CUSTOM TOPOGRAPHIC BACKGROUND */}
+      <Image 
+        source={require('../../assets/images/app-bg.png')} 
+        style={styles.bgPattern} 
+      />
 
       {/* 🌟 FIXED HEADER USING INSETS */}
       <View style={[styles.header, { paddingTop: Math.max(insets.top + 12, 16) }]}>
@@ -133,14 +138,14 @@ export default function SightingMapScreen({ route, navigation }) {
       {/* 🚀 ANIMATED WRAPPER */}
       <Animated.View style={[styles.container, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
         
-        {/* INFO BANNER (Now a floating card) */}
+        {/* INFO BANNER */}
         <View style={styles.bannerWrapper}>
           <View style={styles.bannerCard}>
             <View style={styles.bannerIconBg}>
               <MaterialCommunityIcons name="map-marker-radius" size={20} color={COLORS.pinkRed} />
             </View>
             <Text style={styles.bannerText}>
-              Search or tap the map to drop a pin where you saw <Text style={{fontWeight: '900', color: COLORS.primary}}>{animal.name || 'this pet'}</Text>.
+              Search or tap the map to drop a pin where you saw <Text style={{fontFamily: 'Urbanist_800ExtraBold', color: COLORS.primary}}>{animal.name || 'this pet'}</Text>.
             </Text>
           </View>
         </View>
@@ -185,9 +190,16 @@ export default function SightingMapScreen({ route, navigation }) {
                   paddingHorizontal: 4,
                   paddingVertical: 4,
                 },
-                textInput: { height: 48, borderRadius: 12, paddingHorizontal: 16, fontSize: 15, fontWeight: '600', color: COLORS.textDark },
+                textInput: { 
+                  height: 48, 
+                  borderRadius: 12, 
+                  paddingHorizontal: 16, 
+                  fontFamily: 'Urbanist_600SemiBold', // 🚀 FONT UPDATE 
+                  fontSize: 15, 
+                  color: COLORS.textDark 
+                },
                 listView: { backgroundColor: COLORS.surface, borderRadius: 16, marginTop: 8, elevation: 4, borderWidth: 1, borderColor: COLORS.border },
-                description: { fontWeight: '500', color: COLORS.textDark },
+                description: { fontFamily: 'Urbanist_500Medium', color: COLORS.textDark }, // 🚀 FONT UPDATE
               }}
             />
           </View>
@@ -237,16 +249,25 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: COLORS.background },
   container: { flex: 1 },
   
+  // 🚀 Background Pattern
+  bgPattern: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    opacity: 0.15,
+    resizeMode: 'cover',
+  },
+
   // Header
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingBottom: 16, zIndex: 10 },
   backBtn: { padding: 8, backgroundColor: 'rgba(255,255,255,0.6)', borderRadius: 12, borderWidth: 1, borderColor: COLORS.border },
-  headerTitle: { fontSize: 18, fontWeight: '900', color: COLORS.primary, letterSpacing: -0.5 },
+  headerTitle: { fontFamily: 'Poppins_900Black', fontSize: 18, color: COLORS.primary, letterSpacing: -0.5 },
   
   // Floating Info Banner
   bannerWrapper: { paddingHorizontal: 20, marginBottom: 16, zIndex: 5 },
   bannerCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.surface, padding: 16, borderRadius: 20, gap: 12, borderWidth: 1, borderColor: COLORS.border, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.03, shadowRadius: 8, elevation: 2 },
   bannerIconBg: { width: 40, height: 40, borderRadius: 12, backgroundColor: '#FFEBEE', alignItems: 'center', justifyContent: 'center' },
-  bannerText: { flex: 1, fontSize: 13, color: COLORS.textMuted, lineHeight: 18, fontWeight: '500' },
+  bannerText: { flex: 1, fontFamily: 'Urbanist_600SemiBold', fontSize: 13, color: COLORS.textMuted, lineHeight: 18 },
   
   // Map Elements
   mapContainer: { flex: 1, position: 'relative', overflow: 'hidden', borderTopLeftRadius: 32, borderTopRightRadius: 32 },
@@ -264,5 +285,5 @@ const styles = StyleSheet.create({
   footer: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 24, paddingVertical: 20, backgroundColor: COLORS.surface, borderTopWidth: 1, borderTopColor: COLORS.border, shadowColor: '#000', shadowOffset: { width: 0, height: -10 }, shadowOpacity: 0.04, shadowRadius: 20, elevation: 10 },
   
   submitBtn: { backgroundColor: COLORS.pinkRed, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 20, borderRadius: 16, gap: 8, shadowColor: COLORS.pinkRed, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 5 },
-  submitText: { color: COLORS.surface, fontSize: 16, fontWeight: '900', letterSpacing: -0.3 }
+  submitText: { fontFamily: 'Urbanist_800ExtraBold', color: COLORS.surface, fontSize: 16, letterSpacing: -0.3 }
 });

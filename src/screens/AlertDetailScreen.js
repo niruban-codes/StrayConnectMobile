@@ -4,7 +4,7 @@ import {
   View, Text, ScrollView, TouchableOpacity,
   StyleSheet, StatusBar, Image, Dimensions, Alert, ActivityIndicator, Animated
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context'; // 🚀 CHANGED IMPORT
+import { useSafeAreaInsets } from 'react-native-safe-area-context'; 
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import axios from 'axios';
@@ -31,7 +31,7 @@ const COLORS = {
 };
 
 export default function AlertDetailScreen({ route, navigation }) {
-  const insets = useSafeAreaInsets(); // 🚀 GRAB INSETS
+  const insets = useSafeAreaInsets(); 
   const { alertItem: initialAlert } = route.params;
   
   const [alertItem, setAlertItem] = useState(initialAlert);
@@ -189,9 +189,14 @@ export default function AlertDetailScreen({ route, navigation }) {
   };
 
   return (
-    // 🚀 APPLY INSETS TO FIX LAYOUT
     <View style={[styles.safe, { paddingTop: insets.top }]}>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent={true} />
+
+      {/* 🚀 CUSTOM TOPOGRAPHIC BACKGROUND */}
+      <Image 
+        source={require('../../assets/images/app-bg.png')} 
+        style={styles.bgPattern} 
+      />
 
       {/* 🌟 PREMIUM HEADER */}
       <View style={styles.header}>
@@ -252,8 +257,8 @@ export default function AlertDetailScreen({ route, navigation }) {
         </ScrollView>
       </Animated.View>
 
-      {/* 🌟 FLOATING ACTION BAR */}
-      <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom + 16, 36) }]}>
+      {/* 🌟 FLOATING ACTION BAR (Height Fixed!) */}
+      <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom + 12, 24) }]}>
         {renderBottomAction()}
       </View>
     </View>
@@ -261,43 +266,52 @@ export default function AlertDetailScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: COLORS.secondary }, // Sets yellow behind status bar
+  safe: { flex: 1, backgroundColor: COLORS.secondary }, 
   
+  // 🚀 Background Pattern
+  bgPattern: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    opacity: 0.15,
+    resizeMode: 'cover',
+  },
+
   // Header
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12, backgroundColor: COLORS.secondary },
   backBtn: { padding: 8, backgroundColor: COLORS.surface, borderRadius: 12, borderWidth: 1, borderColor: COLORS.border },
-  headerTitle: { fontSize: 18, fontWeight: '900', color: COLORS.primary, letterSpacing: -0.5 },
+  headerTitle: { fontFamily: 'Poppins_900Black', fontSize: 18, color: COLORS.primary, letterSpacing: -0.5 },
   
   // Image Slider
   sliderContainer: { position: 'relative', width: width, height: width * 0.9, backgroundColor: COLORS.border, borderBottomLeftRadius: 32, borderBottomRightRadius: 32, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 4 },
   sliderImage: { width: width, height: '100%', resizeMode: 'cover' },
   sliderBadge: { position: 'absolute', bottom: 16, right: 16, backgroundColor: 'rgba(0,34,50,0.7)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, flexDirection: 'row', alignItems: 'center', gap: 6 },
-  sliderBadgeText: { color: '#fff', fontSize: 12, fontWeight: '700' },
+  sliderBadgeText: { fontFamily: 'Urbanist_800ExtraBold', color: '#fff', fontSize: 12 },
   
   // Content Layout
   content: { padding: 24, paddingTop: 32 },
   metaRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   typeBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: COLORS.pinkRed, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999 },
-  typeBadgeText: { color: '#fff', fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 },
-  timeText: { fontSize: 13, fontWeight: '600', color: COLORS.textMuted },
+  typeBadgeText: { fontFamily: 'Urbanist_800ExtraBold', color: '#fff', fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5 },
+  timeText: { fontFamily: 'Urbanist_600SemiBold', fontSize: 13, color: COLORS.textMuted },
   
-  title: { fontSize: 32, fontWeight: '900', color: COLORS.primary, marginBottom: 24, letterSpacing: -1, lineHeight: 36 },
+  title: { fontFamily: 'Poppins_900Black', fontSize: 32, color: COLORS.primary, marginBottom: 24, letterSpacing: -1, lineHeight: 36 },
   
   // Monito Style Info Box
   infoBox: { flexDirection: 'row', alignItems: 'center', gap: 16, backgroundColor: COLORS.surface, padding: 16, borderRadius: 20, marginBottom: 32, borderWidth: 1, borderColor: COLORS.border, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.03, shadowRadius: 8, elevation: 2 },
   infoIconBg: { width: 48, height: 48, borderRadius: 14, backgroundColor: '#FFF3E0', alignItems: 'center', justifyContent: 'center' },
-  infoLabel: { fontSize: 11, fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 },
-  infoValue: { fontSize: 16, fontWeight: '800', color: COLORS.textDark, letterSpacing: -0.3 },
+  infoLabel: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 11, color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 },
+  infoValue: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 16, color: COLORS.textDark, letterSpacing: -0.3 },
   
-  sectionTitle: { fontSize: 18, fontWeight: '900', color: COLORS.primary, marginBottom: 12, letterSpacing: -0.5 },
-  description: { fontSize: 15, color: COLORS.textMuted, lineHeight: 24, fontWeight: '500' },
+  sectionTitle: { fontFamily: 'Poppins_900Black', fontSize: 18, color: COLORS.primary, marginBottom: 12, letterSpacing: -0.5 },
+  description: { fontFamily: 'Urbanist_500Medium', fontSize: 15, color: COLORS.textMuted, lineHeight: 24 },
   
-  // Bottom Action Bar
-  bottomBar: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 24, paddingVertical: 20, backgroundColor: COLORS.surface, borderTopWidth: 1, borderTopColor: COLORS.border, shadowColor: '#000', shadowOffset: { width: 0, height: -10 }, shadowOpacity: 0.04, shadowRadius: 20, elevation: 10 },
+  // Bottom Action Bar (Reduced Height)
+  bottomBar: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 24, paddingTop: 16, backgroundColor: COLORS.surface, borderTopWidth: 1, borderTopColor: COLORS.border, shadowColor: '#000', shadowOffset: { width: 0, height: -10 }, shadowOpacity: 0.04, shadowRadius: 20, elevation: 10 },
   
   // Buttons
-  btn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 18, borderRadius: 999, gap: 8 },
-  btnText: { fontSize: 15, fontWeight: '800', color: '#fff', letterSpacing: 0.3 },
+  btn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 16, borderRadius: 999, gap: 8 },
+  btnText: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 15, color: '#fff', letterSpacing: 0.3 },
   
   dangerBtn: { backgroundColor: COLORS.pinkRed, shadowColor: COLORS.pinkRed, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 5 },
   primaryBtn: { backgroundColor: COLORS.primary, shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.2, shadowRadius: 12, elevation: 5 },

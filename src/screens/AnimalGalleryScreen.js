@@ -4,12 +4,12 @@ import {
   View, Text, TouchableOpacity,
   StyleSheet, Image, TextInput, FlatList, StatusBar, ActivityIndicator, Animated
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context'; // 🚀 ADD INSETS HOOK
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { db } from '../../firebase';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
 
-// 🎨 "MONITO" COLOR PALETTE (Yellow Background Theme)
+// 🎨 "MONITO" COLOR PALETTE
 const COLORS = {
   primary: '#003459',       // Dark Blue
   background: '#F7DBA7',    // Mon Yellow - MAIN BACKGROUND
@@ -24,7 +24,7 @@ const COLORS = {
   blueSea: '#00A7E7',
 };
 
-const HEADER_HEIGHT = 60; // 🚀 SET FIXED HEIGHT
+const HEADER_HEIGHT = 60; 
 
 const FILTERS = ['All', 'Dogs', 'Cats', 'Adoptable', 'Lost & Found'];
 
@@ -38,7 +38,7 @@ const statusStyle = (status) => {
 };
 
 export default function AnimalGalleryScreen({ navigation }) {
-  const insets = useSafeAreaInsets(); // 🚀 GRAB INSETS
+  const insets = useSafeAreaInsets(); 
   const [animals, setAnimals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -63,7 +63,7 @@ export default function AnimalGalleryScreen({ navigation }) {
 
   const headerTranslateY = clampedScrollY.interpolate({
     inputRange: [0, HEADER_HEIGHT],
-    outputRange: [0, -HEADER_HEIGHT],
+    outputRange: [0, -HEADER_HEIGHT], // Slides up completely
     extrapolate: 'clamp',
   });
 
@@ -141,9 +141,9 @@ export default function AnimalGalleryScreen({ navigation }) {
           <Text style={styles.cardTitle} numberOfLines={1}>{item.name || 'Unnamed Pet'}</Text>
           
           <View style={styles.cardDetailsRow}>
-            <Text style={styles.cardDetailText}>Gene: <Text style={{fontWeight: '700', color: COLORS.textMuted}}>{item.species}</Text></Text>
+            <Text style={styles.cardDetailText}>Gene: <Text style={{fontFamily: 'Urbanist_800ExtraBold', color: COLORS.textMuted}}>{item.species}</Text></Text>
             <Text style={styles.cardDetailDot}>•</Text>
-            <Text style={styles.cardDetailText}>Loc: <Text style={{fontWeight: '700', color: COLORS.textMuted}}>{item.location || 'Unknown'}</Text></Text>
+            <Text style={styles.cardDetailText}>Loc: <Text style={{fontFamily: 'Urbanist_800ExtraBold', color: COLORS.textMuted}}>{item.location || 'Unknown'}</Text></Text>
           </View>
 
           <View style={styles.cardFooter}>
@@ -161,30 +161,48 @@ export default function AnimalGalleryScreen({ navigation }) {
   };
 
   return (
-    // 🚀 USE VIEW WITH INSETS INSTEAD OF SAFEAREAVIEW
-    <View style={[styles.safe, { paddingTop: insets.top }]}>
+    <View style={styles.safe}>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent={true} />
 
-      {/* 🌟 SCROLLING HEADER */}
+      {/* 🚀 CUSTOM TOPOGRAPHIC BACKGROUND */}
+      <Image 
+        source={require('../../assets/images/app-bg.png')} 
+        style={styles.bgPattern} 
+      />
+
+      {/* 🚀 LAYER 1: SOLID BACKGROUND FOR STATUS BAR */}
+      <View style={{
+        position: 'absolute',
+        top: 0, left: 0, right: 0,
+        height: insets.top,
+        backgroundColor: COLORS.background,
+        zIndex: 101 
+      }} />
+
+      {/* 🚀 LAYER 2: ANIMATED HEADER */}
       <Animated.View style={[
         styles.header, 
         { 
-          paddingTop: insets.top, // Add inset top
-          height: HEADER_HEIGHT + insets.top, // Increase height to fit inset
+          top: insets.top, 
+          height: HEADER_HEIGHT, 
           transform: [{ translateY: headerTranslateY }] 
         }
       ]}>
         <View style={styles.headerLeft}>
-          <MaterialCommunityIcons name="paw" size={24} color={COLORS.primary} />
+          <Image 
+            source={require('../../assets/images/sc-logo.png')} 
+            style={styles.headerLogoIcon} 
+          />
           <Text style={styles.headerTitle}>Directory</Text>
         </View>
-        <TouchableOpacity style={styles.headerBtn}>
-          <MaterialCommunityIcons name="tune-variant" size={22} color={COLORS.primary} />
-        </TouchableOpacity>
+        {/* 🚀 Removed the redundant filter button here! */}
       </Animated.View>
 
       <Animated.ScrollView 
-        contentContainerStyle={[styles.scrollContent, { paddingTop: HEADER_HEIGHT + insets.top + 10 }]} // 🚀 PUSH FEED DOWN
+        contentContainerStyle={[
+          styles.scrollContent, 
+          { paddingTop: HEADER_HEIGHT + insets.top + 10 } 
+        ]} 
         showsVerticalScrollIndicator={false}
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
@@ -193,7 +211,6 @@ export default function AnimalGalleryScreen({ navigation }) {
         scrollEventThrottle={16}
       >
         
-        {/* 🚀 ANIMATED WRAPPER */}
         <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
           
           {/* 🌟 PAGE TITLE */}
@@ -253,7 +270,7 @@ export default function AnimalGalleryScreen({ navigation }) {
               keyExtractor={item => item.id}
               numColumns={2}
               columnWrapperStyle={styles.gridRow}
-              scrollEnabled={false} // Important: Scroll handled by parent ScrollView
+              scrollEnabled={false} 
               contentContainerStyle={{ paddingBottom: 40 }}
             />
           )}
@@ -267,40 +284,53 @@ export default function AnimalGalleryScreen({ navigation }) {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: COLORS.background },
   
-  // 🌟 Absolute Header for Collapsing Effect
+  bgPattern: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    opacity: 0.15,
+    resizeMode: 'cover',
+  },
+
   header: { 
     position: 'absolute',
-    top: 0,
     left: 0,
     right: 0,
     flexDirection: 'row', 
     alignItems: 'center', 
     justifyContent: 'space-between', 
     paddingHorizontal: 20, 
-    backgroundColor: COLORS.background, // Match background to hide content under it
+    backgroundColor: COLORS.background, 
     zIndex: 100 
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  headerTitle: { fontSize: 18, fontWeight: '900', color: COLORS.primary, letterSpacing: -0.5 },
-  headerBtn: { padding: 8, backgroundColor: 'rgba(255,255,255,0.6)', borderRadius: 12, borderWidth: 1, borderColor: COLORS.border },
   
-  scrollContent: { paddingHorizontal: 20 }, // Top padding injected dynamically
+  headerLogoIcon: { 
+    width: 28, 
+    height: 28, 
+    resizeMode: 'contain',
+    borderRadius: 6,
+  },
+  
+  headerTitle: { fontFamily: 'Poppins_900Black', fontSize: 20, color: COLORS.primary, letterSpacing: -0.5 },
+  
+  scrollContent: { paddingHorizontal: 20 }, 
   
   // Titles
   titleSection: { marginBottom: 24 },
-  pageTitle: { fontSize: 32, fontWeight: '900', color: COLORS.primary, letterSpacing: -1 },
-  pageSubtitle: { fontSize: 14, color: COLORS.primary, fontWeight: '700', marginTop: 4 },
+  pageTitle: { fontFamily: 'Poppins_900Black', fontSize: 32, color: COLORS.primary, letterSpacing: -1 },
+  pageSubtitle: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 14, color: COLORS.primary, marginTop: 4 },
   
   // Search
   searchBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.surface, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 14, gap: 12, marginBottom: 24, borderWidth: 1, borderColor: COLORS.border, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 12, elevation: 2 },
-  searchInput: { flex: 1, fontSize: 15, fontWeight: '600', color: COLORS.textDark },
+  searchInput: { flex: 1, fontFamily: 'Urbanist_600SemiBold', fontSize: 15, color: COLORS.textDark },
   clearBtn: { padding: 4 },
   
   // Filters
   filterRow: { gap: 10, paddingBottom: 8, marginBottom: 24 },
   filterChip: { paddingHorizontal: 20, paddingVertical: 12, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.6)', borderWidth: 1, borderColor: COLORS.border },
   filterChipActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-  filterText: { fontSize: 13, fontWeight: '800', color: COLORS.primary },
+  filterText: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 13, color: COLORS.primary },
   filterTextActive: { color: COLORS.surface },
   
   // Grid
@@ -312,23 +342,23 @@ const styles = StyleSheet.create({
   cardImage: { width: '100%', height: '100%', borderRadius: 12, resizeMode: 'cover' },
   placeholderBg: { backgroundColor: 'rgba(0,0,0,0.05)', alignItems: 'center', justifyContent: 'center' },
   idBadge: { position: 'absolute', top: 16, left: 16, backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: 8, paddingHorizontal: 6, paddingVertical: 4 },
-  idText: { color: COLORS.primary, fontSize: 9, fontWeight: '800' },
+  idText: { fontFamily: 'Urbanist_800ExtraBold', color: COLORS.primary, fontSize: 9 },
   
   // Card Text Info
   cardInfo: { padding: 12 },
-  cardTitle: { fontSize: 15, fontWeight: '800', color: COLORS.primary, marginBottom: 6, letterSpacing: -0.3 },
+  cardTitle: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 15, color: COLORS.primary, marginBottom: 6, letterSpacing: -0.3 },
   
   cardDetailsRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  cardDetailText: { fontSize: 10, color: COLORS.textMuted, fontWeight: '600', flexShrink: 1 },
+  cardDetailText: { fontFamily: 'Urbanist_600SemiBold', fontSize: 10, color: COLORS.textMuted, flexShrink: 1 },
   cardDetailDot: { fontSize: 10, color: COLORS.border, marginHorizontal: 4 },
   
   cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   statusBadge: { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 },
-  statusText: { fontSize: 9, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 },
+  statusText: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 9, textTransform: 'uppercase', letterSpacing: 0.5 },
   
   // Empty States
   loadingState: { paddingVertical: 60, alignItems: 'center' },
   emptyState: { alignItems: 'center', paddingVertical: 40, gap: 12, backgroundColor: 'rgba(255,255,255,0.5)', borderRadius: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.8)' },
-  emptyTitle: { fontSize: 18, fontWeight: '900', color: COLORS.primary },
-  emptySubtitle: { fontSize: 13, color: COLORS.textMuted, textAlign: 'center', fontWeight: '600' },
+  emptyTitle: { fontFamily: 'Poppins_900Black', fontSize: 18, color: COLORS.primary },
+  emptySubtitle: { fontFamily: 'Urbanist_600SemiBold', fontSize: 13, color: COLORS.textMuted, textAlign: 'center' },
 });

@@ -2,14 +2,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   View, Text, StyleSheet, FlatList, TouchableOpacity, 
-  ActivityIndicator, Alert, StatusBar, Animated 
+  ActivityIndicator, Alert, StatusBar, Animated, Image 
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context'; // 🚀 IMPORT INSETS
+import { useSafeAreaInsets } from 'react-native-safe-area-context'; 
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { db, auth } from '../../firebase';
 import { collection, query, where, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 
-// 🎨 "MONITO" COLOR PALETTE (Yellow Background Theme)
+// 🎨 "MONITO" COLOR PALETTE 
 const COLORS = {
   primary: '#003459',       // Dark Blue
   background: '#F7DBA7',    // Mon Yellow - MAIN BACKGROUND
@@ -20,11 +20,11 @@ const COLORS = {
   
   pinkRed: '#FF564F',
   blueSea: '#00A7E7',
-  unreadBg: '#E1F5FE',      // Very light blue for unread highlight
+  unreadBg: '#E1F5FE',      
 };
 
 export default function NotificationsScreen({ navigation }) {
-  const insets = useSafeAreaInsets(); // 🚀 GRAB INSETS
+  const insets = useSafeAreaInsets(); 
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -114,9 +114,14 @@ export default function NotificationsScreen({ navigation }) {
   );
 
   return (
-    // 🚀 USE VIEW WITH INSETS TO FIX THE LAYOUT GLITCH
     <View style={[styles.safe, { paddingTop: insets.top }]}>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent={true} />
+
+      {/* 🚀 CUSTOM TOPOGRAPHIC BACKGROUND */}
+      <Image 
+        source={require('../../assets/images/app-bg.png')} 
+        style={styles.bgPattern} 
+      />
 
       {/* 🌟 PREMIUM HEADER */}
       <View style={styles.header}>
@@ -142,7 +147,6 @@ export default function NotificationsScreen({ navigation }) {
             data={notifications}
             keyExtractor={(item) => item.id}
             renderItem={renderItem}
-            // 🚀 INJECT BOTTOM INSET HERE
             contentContainerStyle={[styles.listContent, { paddingBottom: Math.max(insets.bottom + 20, 40) }]}
             showsVerticalScrollIndicator={false}
           />
@@ -155,10 +159,21 @@ export default function NotificationsScreen({ navigation }) {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: COLORS.background },
   
+  // 🚀 Background Pattern
+  bgPattern: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    opacity: 0.15,
+    resizeMode: 'cover',
+  },
+
   // Header
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12, zIndex: 10 },
   backBtn: { padding: 8, backgroundColor: 'rgba(255,255,255,0.6)', borderRadius: 12, borderWidth: 1, borderColor: COLORS.border },
-  headerTitle: { fontSize: 18, fontWeight: '900', color: COLORS.primary, letterSpacing: -0.5 },
+  
+  // 🚀 Typography Updates
+  headerTitle: { fontFamily: 'Poppins_900Black', fontSize: 18, color: COLORS.primary, letterSpacing: -0.5 },
   
   feedContainer: { flex: 1 },
   listContent: { paddingHorizontal: 20, paddingTop: 12 },
@@ -170,15 +185,16 @@ const styles = StyleSheet.create({
   iconBg: { width: 52, height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginRight: 16 },
   textContainer: { flex: 1, justifyContent: 'center' },
   
-  title: { fontSize: 15, fontWeight: '700', color: COLORS.textDark, marginBottom: 4, letterSpacing: -0.3 },
-  unreadText: { fontWeight: '900', color: COLORS.primary },
-  message: { fontSize: 13, color: COLORS.textMuted, lineHeight: 20, marginBottom: 6, fontWeight: '500' },
-  time: { fontSize: 11, color: COLORS.textMuted, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
+  // 🚀 Font Family Updates
+  title: { fontFamily: 'Urbanist_600SemiBold', fontSize: 15, color: COLORS.textDark, marginBottom: 4, letterSpacing: -0.3 },
+  unreadText: { fontFamily: 'Urbanist_800ExtraBold', color: COLORS.primary },
+  message: { fontFamily: 'Urbanist_500Medium', fontSize: 13, color: COLORS.textMuted, lineHeight: 20, marginBottom: 6 },
+  time: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 11, color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
   
   unreadDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: COLORS.pinkRed, alignSelf: 'center', marginLeft: 12 },
   
   // Empty State
   emptyState: { alignItems: 'center', justifyContent: 'center', marginTop: 40, paddingVertical: 60, marginHorizontal: 20, backgroundColor: 'rgba(255,255,255,0.4)', borderRadius: 32, borderWidth: 1, borderColor: 'rgba(255,255,255,0.7)' },
-  emptyTitle: { fontSize: 20, fontWeight: '900', color: COLORS.primary, marginTop: 16, letterSpacing: -0.5 },
-  emptyText: { marginTop: 4, fontSize: 14, color: COLORS.textMuted, fontWeight: '600' }
+  emptyTitle: { fontFamily: 'Poppins_900Black', fontSize: 20, color: COLORS.primary, marginTop: 16, letterSpacing: -0.5 },
+  emptyText: { fontFamily: 'Urbanist_600SemiBold', marginTop: 4, fontSize: 14, color: COLORS.textMuted }
 });

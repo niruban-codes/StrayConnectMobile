@@ -97,26 +97,36 @@ export default function LocalAlertsScreen({ navigation }) {
     <View style={styles.safe}>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent={true} />
 
+      {/* 🚀 CUSTOM TOPOGRAPHIC BACKGROUND */}
+      <Image 
+        source={require('../../assets/images/app-bg.png')} 
+        style={styles.bgPattern} 
+      />
+
       {/* 🚀 LAYER 1: SOLID BACKGROUND FOR STATUS BAR */}
       <View style={{
         position: 'absolute',
         top: 0, left: 0, right: 0,
         height: insets.top,
         backgroundColor: COLORS.background,
-        zIndex: 101 // HIGHEST Z-INDEX
+        zIndex: 101 
       }} />
 
-      {/* 🚀 LAYER 2: ANIMATED HEADER (Slides behind Layer 1) */}
+      {/* 🚀 LAYER 2: ANIMATED HEADER */}
       <Animated.View style={[
         styles.header, 
         { 
-          top: insets.top, // Starts exactly below Layer 1
+          top: insets.top, 
           height: HEADER_HEIGHT, 
           transform: [{ translateY: headerTranslateY }] 
         }
       ]}>
         <View style={styles.headerLeft}>
-          <MaterialCommunityIcons name="radar" size={24} color={COLORS.pinkRed} />
+          {/* 🚀 CUSTOM APP LOGO REPLACING RADAR ICON */}
+          <Image 
+            source={require('../../assets/images/sc-logo.png')} 
+            style={styles.headerLogoIcon} 
+          />
           <Text style={styles.headerTitle}>SOS Alerts</Text>
         </View>
         <TouchableOpacity style={styles.headerBtn} onPress={() => navigation.goBack()}>
@@ -127,7 +137,7 @@ export default function LocalAlertsScreen({ navigation }) {
       <Animated.ScrollView 
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingTop: HEADER_HEIGHT + insets.top + 20 } // Start feed below header
+          { paddingTop: HEADER_HEIGHT + insets.top + 20 }
         ]} 
         showsVerticalScrollIndicator={false}
         onScroll={Animated.event(
@@ -137,7 +147,6 @@ export default function LocalAlertsScreen({ navigation }) {
         scrollEventThrottle={16}
       >
         
-        {/* 🚀 ANIMATED CONTENT */}
         <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
           
           {/* 🌟 RADAR STATUS CARD */}
@@ -221,7 +230,14 @@ export default function LocalAlertsScreen({ navigation }) {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: COLORS.background },
   
-  // 🌟 Header Styles Adjusted for 2-Layer System
+  bgPattern: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    opacity: 0.15,
+    resizeMode: 'cover',
+  },
+
   header: { 
     position: 'absolute',
     left: 0,
@@ -234,7 +250,15 @@ const styles = StyleSheet.create({
     zIndex: 100 
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  headerTitle: { fontSize: 18, fontWeight: '900', color: COLORS.primary, letterSpacing: -0.5 },
+  
+  headerLogoIcon: { 
+    width: 28, 
+    height: 28, 
+    resizeMode: 'contain',
+    borderRadius: 6,
+  },
+  
+  headerTitle: { fontFamily: 'Poppins_900Black', fontSize: 18, color: COLORS.primary, letterSpacing: -0.5 },
   headerBtn: { padding: 8, backgroundColor: 'rgba(255,255,255,0.6)', borderRadius: 12, borderWidth: 1, borderColor: COLORS.border },
 
   scrollContent: { paddingHorizontal: 20, paddingBottom: 40 },
@@ -243,8 +267,8 @@ const styles = StyleSheet.create({
   radarBanner: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.surface, borderRadius: 24, padding: 20, marginBottom: 28, gap: 16, borderWidth: 1, borderColor: COLORS.border, shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 12, elevation: 3 },
   radarPulse: { position: 'relative' },
   radarIconBg: { width: 56, height: 56, borderRadius: 18, backgroundColor: COLORS.pinkRed, alignItems: 'center', justifyContent: 'center' },
-  radarTitle: { fontSize: 20, fontWeight: '900', color: COLORS.primary, letterSpacing: -0.5, marginBottom: 4 },
-  radarSub: { fontSize: 13, color: COLORS.textMuted, lineHeight: 18, fontWeight: '600' },
+  radarTitle: { fontFamily: 'Poppins_900Black', fontSize: 20, color: COLORS.primary, letterSpacing: -0.5, marginBottom: 4 },
+  radarSub: { fontFamily: 'Urbanist_600SemiBold', fontSize: 13, color: COLORS.textMuted, lineHeight: 18 },
   
   // Monito Style Alert Cards
   alertCard: { backgroundColor: COLORS.surface, borderRadius: 24, overflow: 'hidden', marginBottom: 20, borderWidth: 1, borderColor: COLORS.border, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.06, shadowRadius: 16, elevation: 4 },
@@ -253,26 +277,26 @@ const styles = StyleSheet.create({
   placeholderBg: { backgroundColor: COLORS.background, alignItems: 'center', justifyContent: 'center' },
   
   typeBadge: { position: 'absolute', top: 20, left: 20, backgroundColor: COLORS.pinkRed, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10, flexDirection: 'row', alignItems: 'center', gap: 6 },
-  typeBadgeText: { color: '#fff', fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 0.5 },
+  typeBadgeText: { fontFamily: 'Urbanist_800ExtraBold', color: '#fff', fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.5 },
   multiPhotoBadge: { position: 'absolute', bottom: 16, right: 16, backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, flexDirection: 'row', alignItems: 'center', gap: 4 },
-  multiPhotoText: { color: '#fff', fontSize: 11, fontWeight: '800' },
+  multiPhotoText: { fontFamily: 'Urbanist_800ExtraBold', color: '#fff', fontSize: 11 },
   
   // Card Text
   alertContent: { padding: 16, paddingTop: 4 },
   topRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  animalType: { fontSize: 18, fontWeight: '900', color: COLORS.primary, letterSpacing: -0.5 },
-  timeText: { fontSize: 12, fontWeight: '700', color: COLORS.textMuted },
+  animalType: { fontFamily: 'Poppins_900Black', fontSize: 18, color: COLORS.primary, letterSpacing: -0.5 },
+  timeText: { fontFamily: 'Urbanist_600SemiBold', fontSize: 12, color: COLORS.textMuted },
   
   locationRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 },
-  locationText: { fontSize: 14, fontWeight: '800', color: COLORS.primary, flex: 1 },
+  locationText: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 14, color: COLORS.primary, flex: 1 },
   
-  descText: { fontSize: 14, color: COLORS.textMuted, fontStyle: 'italic', lineHeight: 20, marginBottom: 16, fontWeight: '500' },
+  descText: { fontFamily: 'Urbanist_500Medium', fontSize: 14, color: COLORS.textMuted, fontStyle: 'italic', lineHeight: 20, marginBottom: 16 },
   
   footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: COLORS.border, paddingTop: 12 },
-  respondText: { fontSize: 12, fontWeight: '900', color: COLORS.primary, textTransform: 'uppercase', letterSpacing: 1 },
+  respondText: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 12, color: COLORS.primary, textTransform: 'uppercase', letterSpacing: 1 },
 
   // Empty State
   emptyState: { alignItems: 'center', paddingVertical: 80, gap: 12, backgroundColor: 'rgba(255,255,255,0.4)', borderRadius: 32, borderWidth: 1, borderColor: 'rgba(255,255,255,0.7)' },
-  emptyTitle: { fontSize: 22, fontWeight: '900', color: COLORS.primary, letterSpacing: -0.5 },
-  emptySub: { fontSize: 14, color: COLORS.textMuted, textAlign: 'center', paddingHorizontal: 40, fontWeight: '600', lineHeight: 20 },
+  emptyTitle: { fontFamily: 'Poppins_900Black', fontSize: 22, color: COLORS.primary, letterSpacing: -0.5 },
+  emptySub: { fontFamily: 'Urbanist_600SemiBold', fontSize: 14, color: COLORS.textMuted, textAlign: 'center', paddingHorizontal: 40, lineHeight: 20 },
 });

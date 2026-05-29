@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView,
-  StyleSheet, TextInput,
+  StyleSheet, TextInput, Image,
   StatusBar, Alert, ActivityIndicator, Animated
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context'; 
@@ -17,6 +17,7 @@ const COLORS = {
   primary: '#003459',       // Dark Blue
   background: '#F7DBA7',    // Mon Yellow - MAIN BACKGROUND
   surface: '#FFFFFF',       // Pure White
+  inputFill: '#F8F9FA',     // 🚀 NEW: Clean grey for form inputs!
   border: 'rgba(0, 52, 89, 0.1)', 
   textDark: '#00171F',      
   textMuted: '#52616B',     
@@ -26,7 +27,7 @@ const COLORS = {
   orangeShine: '#FF912C',
 };
 
-const HEADER_HEIGHT = 60; // FIXED HEIGHT FOR ANIMATED HEADER
+const HEADER_HEIGHT = 60; 
 
 const INCIDENT_TYPES = [
   'Medical Emergency', 
@@ -193,6 +194,12 @@ export default function ReportScreen({ navigation }) {
     <View style={styles.safe}>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent={true} />
 
+      {/* 🚀 CUSTOM TOPOGRAPHIC BACKGROUND */}
+      <Image 
+        source={require('../../assets/images/app-bg.png')} 
+        style={styles.bgPattern} 
+      />
+
       {/* 🚀 LAYER 1: SOLID BACKGROUND FOR STATUS BAR */}
       <View style={{
         position: 'absolute',
@@ -222,7 +229,7 @@ export default function ReportScreen({ navigation }) {
         style={styles.scroll}
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingTop: HEADER_HEIGHT + insets.top + 10 }
+          { paddingTop: HEADER_HEIGHT + insets.top + 10 } 
         ]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
@@ -232,12 +239,9 @@ export default function ReportScreen({ navigation }) {
         )}
         scrollEventThrottle={16}
       >
-        {/* 🚀 ANIMATED WRAPPER */}
         <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
           
           <Text style={styles.pageTitle}>Animal in Need</Text>
-          
-          {/* 🚀 FIXED TEXT STRING SEGMENT HERE */}
           <Text style={styles.pageSubtitle}>
             Provide details to help us locate and assist the animal safely. <Text style={{color: COLORS.pinkRed}}>✦</Text>
           </Text>
@@ -400,6 +404,16 @@ export default function ReportScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: COLORS.background },
+  
+  // 🚀 New Background Image Style
+  bgPattern: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    opacity: 0.15,
+    resizeMode: 'cover',
+  },
+
   header: { 
     position: 'absolute',
     left: 0,
@@ -412,55 +426,57 @@ const styles = StyleSheet.create({
     zIndex: 100 
   },
   backBtn: { padding: 8, backgroundColor: 'rgba(255,255,255,0.6)', borderRadius: 12, borderWidth: 1, borderColor: COLORS.border },
-  headerTitle: { fontSize: 18, fontWeight: '900', color: COLORS.primary, letterSpacing: -0.5 },
+  
+  // 🚀 Typography
+  headerTitle: { fontFamily: 'Poppins_900Black', fontSize: 20, color: COLORS.primary, letterSpacing: -0.5 },
   
   scroll: { flex: 1 },
   scrollContent: { paddingHorizontal: 20, paddingBottom: 60 },
   
-  pageTitle: { fontSize: 32, fontWeight: '900', color: COLORS.primary, letterSpacing: -1, marginBottom: 4 },
-  pageSubtitle: { fontSize: 14, color: COLORS.primary, fontWeight: '600', marginBottom: 24 },
+  pageTitle: { fontFamily: 'Poppins_900Black', fontSize: 32, color: COLORS.primary, letterSpacing: -1, marginBottom: 4 },
+  pageSubtitle: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 14, color: COLORS.primary, marginBottom: 24 },
   
   // Cards
   card: { backgroundColor: COLORS.surface, borderRadius: 24, padding: 20, marginBottom: 20, borderWidth: 1, borderColor: COLORS.border, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.03, shadowRadius: 8, elevation: 2 },
-  cardLabel: { fontSize: 14, fontWeight: '800', color: COLORS.primary, marginBottom: 12, letterSpacing: -0.3 },
+  cardLabel: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 14, color: COLORS.primary, marginBottom: 12, letterSpacing: -0.3 },
   
   // Photos
   photoRow: { flexDirection: 'row', gap: 12, paddingBottom: 4 },
   addPhotoBtn: { width: 88, height: 96, borderRadius: 16, borderWidth: 2, borderStyle: 'dashed', borderColor: 'rgba(0, 52, 89, 0.2)', alignItems: 'center', justifyContent: 'center', backgroundColor: '#F0F4F8', gap: 6 },
-  addPhotoText: { fontSize: 11, color: COLORS.primary, fontWeight: '700' },
+  addPhotoText: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 11, color: COLORS.primary },
   photoThumb: { width: 88, height: 96, borderRadius: 16, backgroundColor: COLORS.background, position: 'relative' },
   thumbImage: { width: '100%', height: '100%', borderRadius: 16, resizeMode: 'cover' },
   removePhoto: { position: 'absolute', top: -8, right: -8, zIndex: 10, backgroundColor: COLORS.surface, borderRadius: 999 },
-  photoCount: { fontSize: 12, color: COLORS.primary, fontWeight: '700', marginTop: 12 },
+  photoCount: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 12, color: COLORS.primary, marginTop: 12 },
   
   // Toggles / Chips
   toggleRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  toggleBtn: { paddingHorizontal: 16, paddingVertical: 12, borderRadius: 12, backgroundColor: COLORS.background, borderWidth: 1, borderColor: COLORS.border },
+  toggleBtn: { paddingHorizontal: 16, paddingVertical: 12, borderRadius: 12, backgroundColor: COLORS.inputFill, borderWidth: 1, borderColor: COLORS.border },
   toggleBtnActive: { backgroundColor: COLORS.pinkRed, borderColor: COLORS.pinkRed },
-  toggleText: { fontSize: 13, fontWeight: '700', color: COLORS.textMuted },
+  toggleText: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 13, color: COLORS.textMuted },
   toggleTextActive: { color: COLORS.surface },
   
   // Animal Type
   animalTypeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  animalTypeBtn: { paddingHorizontal: 16, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderRadius: 12, backgroundColor: COLORS.background, borderWidth: 1, borderColor: COLORS.border },
+  animalTypeBtn: { paddingHorizontal: 16, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderRadius: 12, backgroundColor: COLORS.inputFill, borderWidth: 1, borderColor: COLORS.border },
   animalTypeBtnActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-  animalTypeText: { fontSize: 13, fontWeight: '700', color: COLORS.textMuted },
+  animalTypeText: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 13, color: COLORS.textMuted },
   animalTypeTextActive: { color: COLORS.surface },
   
-  // Inputs
-  inputRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.background, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 16, gap: 10, borderWidth: 1, borderColor: COLORS.border },
-  input: { flex: 1, fontSize: 15, fontWeight: '600', color: COLORS.textDark },
-  prefix: { fontSize: 15, fontWeight: '800', color: COLORS.primary },
-  textarea: { backgroundColor: COLORS.background, borderRadius: 16, padding: 16, fontSize: 15, fontWeight: '500', color: COLORS.textDark, minHeight: 120, borderWidth: 1, borderColor: COLORS.border },
+  // Inputs (Fixed Backgrounds)
+  inputRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.inputFill, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 16, gap: 10, borderWidth: 1, borderColor: COLORS.border },
+  input: { flex: 1, fontFamily: 'Urbanist_600SemiBold', fontSize: 15, color: COLORS.textDark },
+  prefix: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 15, color: COLORS.primary },
+  textarea: { backgroundColor: COLORS.inputFill, borderRadius: 16, padding: 16, fontFamily: 'Urbanist_600SemiBold', fontSize: 15, color: COLORS.textDark, minHeight: 120, borderWidth: 1, borderColor: COLORS.border },
   
   // Info Card
   infoCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 16, backgroundColor: COLORS.surface, borderRadius: 24, padding: 20, marginBottom: 24, borderWidth: 1, borderColor: COLORS.border },
   infoIcon: { width: 48, height: 48, borderRadius: 14, backgroundColor: '#E1F5FE', alignItems: 'center', justifyContent: 'center' },
-  infoTitle: { fontSize: 15, fontWeight: '800', color: COLORS.primary, marginBottom: 4, letterSpacing: -0.3 },
-  infoText: { fontSize: 13, color: COLORS.textMuted, lineHeight: 20, fontWeight: '500' },
+  infoTitle: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 15, color: COLORS.primary, marginBottom: 4, letterSpacing: -0.3 },
+  infoText: { fontFamily: 'Urbanist_600SemiBold', fontSize: 13, color: COLORS.textMuted, lineHeight: 20 },
   
   // Submit Button
   submitBtn: { backgroundColor: COLORS.pinkRed, borderRadius: 16, paddingVertical: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, shadowColor: COLORS.pinkRed, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 5 },
-  submitText: { color: COLORS.surface, fontSize: 16, fontWeight: '900', letterSpacing: -0.3 },
-  submitNote: { textAlign: 'center', fontSize: 12, color: COLORS.textMuted, marginTop: 16, fontWeight: '600' },
+  submitText: { fontFamily: 'Urbanist_800ExtraBold', color: COLORS.surface, fontSize: 16, letterSpacing: -0.3 },
+  submitNote: { fontFamily: 'Urbanist_600SemiBold', textAlign: 'center', fontSize: 12, color: COLORS.textMuted, marginTop: 16 },
 });

@@ -1,12 +1,27 @@
 // App.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, ActivityIndicator, StatusBar } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { onAuthStateChanged } from 'firebase/auth';
-import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context'; // 🚀 UPDATED IMPORT
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context'; 
+
+// FONT & SPLASH SCREEN IMPORTS
+import * as SplashScreen from 'expo-splash-screen';
+import { useFonts } from 'expo-font';
+import { 
+  Poppins_400Regular, 
+  Poppins_700Bold, 
+  Poppins_900Black 
+} from '@expo-google-fonts/poppins';
+import { 
+  Urbanist_400Regular, 
+  Urbanist_500Medium,
+  Urbanist_600SemiBold, 
+  Urbanist_800ExtraBold 
+} from '@expo-google-fonts/urbanist';
 
 // IMPORT DB AND EXPO TOOLS HERE
 import { auth, db } from './firebase'; 
@@ -27,6 +42,9 @@ import AlertDetailScreen from './src/screens/AlertDetailScreen';
 import WelcomeScreen from './src/screens/WelcomeScreen';
 import LoginScreen from './src/screens/LoginScreen';
 import SignupScreen from './src/screens/SignupScreen';
+
+// Keep the splash screen visible while we fetch resources
+SplashScreen.preventAutoHideAsync();
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -68,7 +86,6 @@ function SOSStack() {
   );
 }
 
-// 🚀 NEW: Extracted Navigator to use insets for the Tab Bar!
 function RootNavigator({ user }) {
   const insets = useSafeAreaInsets();
 
@@ -89,11 +106,16 @@ function RootNavigator({ user }) {
               shadowOffset: { width: 0, height: -6 },
               shadowOpacity: 0.08,
               shadowRadius: 16,
-              height: 65 + insets.bottom, // 🚀 DYNAMIC HEIGHT PREVENTS GLITCHES
-              paddingBottom: insets.bottom || 10, // 🚀 DYNAMIC PADDING
+              height: 65 + insets.bottom, 
+              paddingBottom: insets.bottom || 10, 
               paddingTop: 12,
             },
-            tabBarLabelStyle: { fontSize: 11, fontWeight: '800', marginTop: 4, letterSpacing: -0.2 },
+            tabBarLabelStyle: { 
+              fontSize: 11, 
+              marginTop: 4, 
+              letterSpacing: -0.2,
+              fontFamily: 'Urbanist_800ExtraBold' // 🚀 Using Urbanist for tabs!
+            },
             tabBarIcon: ({ focused, color }) => {
               const icons = {
                 Home:      focused ? 'home'              : 'home-outline',
@@ -125,12 +147,23 @@ function RootNavigator({ user }) {
 
 export default function App() {
   const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+
+  // 🚀 Load the Fonts
+  let [fontsLoaded, fontError] = useFonts({
+    Poppins_400Regular,
+    Poppins_700Bold,
+    Poppins_900Black,
+    Urbanist_400Regular,
+    Urbanist_500Medium,
+    Urbanist_600SemiBold,
+    Urbanist_800ExtraBold,
+  });
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
-      setIsLoading(false);
+      setIsAuthLoading(false);
     });
     return unsubscribe;
   }, []);
@@ -162,19 +195,24 @@ export default function App() {
     registerForPushNotificationsAsync();
   }, [user]);
 
-  if (isLoading) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background }}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
-      </View>
-    );
+  // 🚀 Callback to hide splash screen once everything is loaded
+  const onLayoutRootView = useCallback(async () => {
+    if (!isAuthLoading && (fontsLoaded || fontError)) {
+      await SplashScreen.hideAsync();
+    }
+  }, [isAuthLoading, fontsLoaded, fontError]);
+
+  // Prevent rendering anything until Auth and Fonts are resolved
+  if (isAuthLoading || (!fontsLoaded && !fontError)) {
+    return null;
   }
 
   return (
     <SafeAreaProvider>
-      {/* 🚀 GLOBAL STATUS BAR */}
-      <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
-      <RootNavigator user={user} />
+      <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
+        <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
+        <RootNavigator user={user} />
+      </View>
     </SafeAreaProvider>
   );
 }
