@@ -43,3 +43,6 @@ yarn-error.*
 
 # Ignore our secret keys
 firebase.js
+
+# Firebase configuration
+google-services.json

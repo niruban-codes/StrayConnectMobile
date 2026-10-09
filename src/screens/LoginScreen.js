@@ -6,8 +6,10 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context'; 
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { auth } from '../../firebase';
+import { ensureUserProfile } from '../services/userProfile';
 
 // 🎨 "MONITO" COLOR PALETTE 
 const COLORS = {
@@ -25,17 +27,21 @@ export default function LoginScreen({ navigation }) {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  
-  // 🚀 NEW: State for password visibility toggle
   const [showPassword, setShowPassword] = useState(false);
-  
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   // 🚀 ANIMATION VALUES
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
 
   useEffect(() => {
+    // Initialize Google Sign-In
+    GoogleSignin.configure({
+      webClientId: '447208299459-ec7nftghokahr5ngt3odcf0sav1fqqni.apps.googleusercontent.com',
+      offlineAccess: true,
+    });
+
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
@@ -56,7 +62,6 @@ export default function LoginScreen({ navigation }) {
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      // Navigation is handled automatically by App.js listener
     } catch (err) {
       Alert.alert('Login Failed', err.message);
     } finally {
@@ -64,11 +69,34 @@ export default function LoginScreen({ navigation }) {
     }
   };
 
+  const handleGoogleSignIn = async () => {
+    setGoogleLoading(true);
+    try {
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+      const response = await GoogleSignin.signIn();
+      
+      // Handle variations in Google SDK response structures safely
+      const idToken = response.idToken || response.data?.idToken;
+      
+      if (!idToken) throw new Error('No ID Token recovered from Google.');
+
+      const credential = GoogleAuthProvider.credential(idToken);
+      const result = await signInWithCredential(auth, credential);
+      await ensureUserProfile(result.user);
+    } catch (err) {
+      // Avoid alerting if the user manually cancels the popup box
+      if (err.code !== 'ASYNC_OP_IN_PROGRESS') {
+        Alert.alert('Google Sign-In Failed', err.message);
+      }
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
   return (
     <View style={styles.safe}>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent={true} />
       
-      {/* 🚀 CUSTOM TOPOGRAPHIC BACKGROUND */}
       <Image 
         source={require('../../assets/images/app-bg.png')} 
         style={styles.bgPattern} 
@@ -118,11 +146,10 @@ export default function LoginScreen({ navigation }) {
                 style={styles.input} 
                 placeholder="Password" 
                 placeholderTextColor={COLORS.textMuted}
-                secureTextEntry={!showPassword} // 🚀 Dynamic toggle
+                secureTextEntry={!showPassword} 
                 value={password} 
                 onChangeText={setPassword}
               />
-              {/* 🚀 Eye Icon Button */}
               <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
                 <MaterialCommunityIcons 
                   name={showPassword ? "eye-outline" : "eye-off-outline"} 
@@ -132,11 +159,35 @@ export default function LoginScreen({ navigation }) {
               </TouchableOpacity>
             </View>
 
-            <TouchableOpacity style={styles.submitBtn} onPress={handleLogin} disabled={loading} activeOpacity={0.8}>
+            <TouchableOpacity style={styles.submitBtn} onPress={handleLogin} disabled={loading || googleLoading} activeOpacity={0.8}>
               {loading ? (
                 <ActivityIndicator color={COLORS.surface} />
               ) : (
                 <Text style={styles.submitText}>Log In</Text>
+              )}
+            </TouchableOpacity>
+
+            {/* 🚀 OR DIVIDER */}
+            <View style={styles.dividerContainer}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>OR</Text>
+              <View style={styles.dividerLine} />
+            </View>
+
+            {/* 🚀 GOOGLE BUTTON */}
+            <TouchableOpacity 
+              style={styles.googleBtn} 
+              onPress={handleGoogleSignIn} 
+              disabled={loading || googleLoading}
+              activeOpacity={0.8}
+            >
+              {googleLoading ? (
+                <ActivityIndicator color={COLORS.primary} />
+              ) : (
+                <View style={styles.googleBtnContent}>
+                  <MaterialCommunityIcons name="google" size={20} color={COLORS.primary} style={styles.googleIcon} />
+                  <Text style={styles.googleBtnText}>Continue with Google</Text>
+                </View>
               )}
             </TouchableOpacity>
           </View>
@@ -161,22 +212,28 @@ const styles = StyleSheet.create({
   },
 
   backBtn: { position: 'absolute', left: 24, padding: 10, backgroundColor: 'rgba(255,255,255,0.7)', borderRadius: 14, borderWidth: 1, borderColor: COLORS.border, zIndex: 10 },
-  
   headerBox: { marginBottom: 32 },
-  
   titleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 },
   title: { flex: 1, fontFamily: 'Poppins_900Black', fontSize: 36, color: COLORS.primary, letterSpacing: -1, lineHeight: 40 },
-  
   iconBg: { width: 48, height: 48, borderRadius: 14, backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center', transform: [{ rotate: '10deg' }] },
   logoImage: { width: 28, height: 28, resizeMode: 'contain', borderRadius: 4 },
-  
   subtitle: { fontFamily: 'Urbanist_600SemiBold', fontSize: 16, color: COLORS.primary, opacity: 0.8, lineHeight: 22 },
   
   form: { gap: 16 },
-  
   inputContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.surface, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 12, borderWidth: 1, borderColor: COLORS.border, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.03, shadowRadius: 8, elevation: 2 },
-  input: { flex: 1, marginLeft: 12, marginRight: 8, fontFamily: 'Urbanist_600SemiBold', fontSize: 15, color: COLORS.textDark, paddingVertical: 0 }, // 🚀 Added marginRight
+  input: { flex: 1, marginLeft: 12, marginRight: 8, fontFamily: 'Urbanist_600SemiBold', fontSize: 15, color: COLORS.textDark, paddingVertical: 0 }, 
   
-  submitBtn: { backgroundColor: COLORS.primary, borderRadius: 16, paddingVertical: 20, alignItems: 'center', marginTop: 16, shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.2, shadowRadius: 12, elevation: 5 },
+  submitBtn: { backgroundColor: COLORS.primary, borderRadius: 16, paddingVertical: 18, alignItems: 'center', marginTop: 8, shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.2, shadowRadius: 12, elevation: 5 },
   submitText: { fontFamily: 'Urbanist_800ExtraBold', color: COLORS.surface, fontSize: 16, letterSpacing: -0.3 },
+
+  // Divider Design
+  dividerContainer: { flexDirection: 'row', alignItems: 'center', marginVertical: 8 },
+  dividerLine: { flex: 1, height: 1, backgroundColor: COLORS.primary, opacity: 0.15 },
+  dividerText: { fontFamily: 'Urbanist_800ExtraBold', color: COLORS.primary, opacity: 0.4, horizontalPadding: 16, fontSize: 12, mx: 12, textAlign: 'center', width: 40 },
+
+  // Google Button Design
+  googleBtn: { backgroundColor: COLORS.surface, borderRadius: 16, paddingVertical: 18, alignItems: 'center', borderWidth: 1, borderColor: COLORS.border, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.03, shadowRadius: 8, elevation: 2 },
+  googleBtnContent: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+  googleIcon: { marginRight: 10 },
+  googleBtnText: { fontFamily: 'Urbanist_800ExtraBold', color: COLORS.primary, fontSize: 16, letterSpacing: -0.3 },
 });

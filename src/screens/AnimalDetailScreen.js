@@ -8,7 +8,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'; 
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { db, auth } from '../../firebase';
-import { collection, addDoc, doc, updateDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, updateDoc, onSnapshot } from 'firebase/firestore';
 
 // 🎨 "MONITO" COLOR PALETTE 
 const COLORS = {
@@ -37,10 +37,11 @@ const statusStyle = (status) => {
 
 export default function AnimalDetailScreen({ route, navigation }) {
   const insets = useSafeAreaInsets(); 
-  const { animal } = route.params;
+  const { animal: initialAnimal } = route.params;
+  const [animal, setAnimal] = useState(initialAnimal);
   const [activeTab, setActiveTab] = useState('vaccinations');
   
-  const [currentStatus, setCurrentStatus] = useState(animal.status);
+  const currentStatus = animal.status;
   const sc = statusStyle(currentStatus);
 
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -55,6 +56,21 @@ export default function AnimalDetailScreen({ route, navigation }) {
 
   const currentUser = auth.currentUser;
   const isOwner = currentUser && animal.ownerId === currentUser.uid;
+
+  useEffect(() => {
+    setAnimal(initialAnimal);
+    return onSnapshot(doc(db, 'animals', initialAnimal.id), (snapshot) => {
+      if (snapshot.exists()) {
+        setAnimal({ ...snapshot.data(), id: snapshot.id });
+      } else {
+        setIsModalVisible(false);
+        Alert.alert('Animal unavailable', 'This animal profile has been removed.');
+        navigation.goBack();
+      }
+    }, () => {
+      Alert.alert('Unable to load passport', 'Please check your connection and reopen this profile.');
+    });
+  }, [initialAnimal, navigation]);
 
   useEffect(() => {
     Animated.parallel([
@@ -119,7 +135,6 @@ export default function AnimalDetailScreen({ route, navigation }) {
             try {
               const animalRef = doc(db, 'animals', animal.id || animal.animalId);
               await updateDoc(animalRef, { status: 'sheltered' }); 
-              setCurrentStatus('sheltered');
               Alert.alert("Success", `${animal.name} is now listed for adoption.`);
             } catch (error) {
               Alert.alert("Error", "Could not update pet status. Please try again.");

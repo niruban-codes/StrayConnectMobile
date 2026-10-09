@@ -1,6 +1,6 @@
 // App.js
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, ActivityIndicator, StatusBar } from 'react-native';
+import { View, Platform, StatusBar } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -28,6 +28,7 @@ import { auth, db } from './firebase';
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { doc, setDoc } from 'firebase/firestore';
+import appConfig from './app.json';
 
 import HomeScreen from './src/screens/HomeScreen';
 import NotificationsScreen from './src/screens/NotificationsScreen'; 
@@ -48,7 +49,8 @@ SplashScreen.preventAutoHideAsync();
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
   }),
@@ -173,6 +175,12 @@ export default function App() {
       if (!user) return; 
       try {
         if (Device.isDevice) {
+          if (Platform.OS === 'android') {
+            await Notifications.setNotificationChannelAsync('default', {
+              name: 'Default',
+              importance: Notifications.AndroidImportance.MAX,
+            });
+          }
           const { status: existingStatus } = await Notifications.getPermissionsAsync();
           let finalStatus = existingStatus;
           if (existingStatus !== 'granted') {
@@ -182,10 +190,12 @@ export default function App() {
           if (finalStatus !== 'granted') return;
 
           try {
-            const tokenData = await Notifications.getExpoPushTokenAsync({ projectId: "YOUR_EXPO_PROJECT_ID_HERE" });
+            const tokenData = await Notifications.getExpoPushTokenAsync({
+              projectId: appConfig.expo.extra.eas.projectId,
+            });
             await setDoc(doc(db, 'users', user.uid), { expoPushToken: tokenData.data, email: user.email }, { merge: true });
           } catch (expoError) {
-            console.log("Expo Go Limitation: ", expoError.message);
+            console.log("Push notification registration failed: ", expoError.message);
           }
         }
       } catch (error) {

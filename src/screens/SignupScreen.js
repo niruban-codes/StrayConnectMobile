@@ -6,11 +6,12 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context'; 
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { createUserWithEmailAndPassword, updateProfile, sendEmailVerification } from 'firebase/auth';
+import { createUserWithEmailAndPassword, updateProfile, sendEmailVerification, GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
+import { ensureUserProfile } from '../services/userProfile';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { auth, db } from '../../firebase';
 
-// 🎨 "MONITO" COLOR PALETTE
 const COLORS = {
   primary: '#003459',       // Dark Blue
   background: '#F7DBA7',    // Mon Yellow - MAIN BACKGROUND
@@ -18,7 +19,7 @@ const COLORS = {
   border: 'rgba(0, 52, 89, 0.1)', 
   textDark: '#00171F',      
   textMuted: '#52616B',     
-  error: '#FF564F',         // Pink Red for errors
+  error: '#FF564F',         
 };
 
 export default function SignupScreen({ navigation }) {
@@ -28,18 +29,23 @@ export default function SignupScreen({ navigation }) {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   
-  // 🚀 NEW: State for password visibility toggles
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [passwordError, setPasswordError] = useState('');
 
-  // 🚀 ANIMATION VALUES
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
 
   useEffect(() => {
+    // Initialize Google Sign-In
+    GoogleSignin.configure({
+      webClientId: '447208299459-ec7nftghokahr5ngt3odcf0sav1fqqni.apps.googleusercontent.com', 
+      offlineAccess: true,
+    });
+
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
@@ -55,41 +61,30 @@ export default function SignupScreen({ navigation }) {
     ]).start();
   }, []);
 
-  // Password Validation Rule
   const validatePassword = (pw) => {
-    // Min 8 chars, 1 uppercase, 1 lowercase, 1 number, 1 special char
     const re = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
     return re.test(pw);
   };
 
   const handleSignup = async () => {
     setPasswordError('');
-
-    // 1. Check for empty fields
     if (!name || !email || !password || !confirmPassword) {
       return Alert.alert('Missing Info', 'Please fill in all fields.');
     }
-
-    // 2. Check if passwords match
     if (password !== confirmPassword) {
       return setPasswordError('Passwords do not match.');
     }
-
-    // 3. Check password strength
     if (!validatePassword(password)) {
       return setPasswordError('Password must be at least 8 characters, include an uppercase letter, a number, and a special character.');
     }
 
     setLoading(true);
     try {
-      // Create user in Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
       
-      // Update Auth Profile name
       await updateProfile(user, { displayName: name });
       
-      // Save full profile to Firestore Database
       await setDoc(doc(db, 'users', user.uid), {
         name: name,
         email: email,
@@ -98,19 +93,11 @@ export default function SignupScreen({ navigation }) {
         createdAt: new Date()
       });
 
-      // Send Verification Email in the background
       await sendEmailVerification(user);
-      
-      Alert.alert(
-        'Welcome to StrayConnect! 🎉', 
-        'Your account is ready. We have sent a verification link to your email.'
-      );
-
+      Alert.alert('Welcome! 🎉', 'Your account is ready. We have sent a verification link to your email.');
     } catch (err) {
       if (err.code === 'auth/email-already-in-use') {
         Alert.alert('Email taken', 'An account already exists with this email.');
-      } else if (err.code === 'auth/invalid-email') {
-        Alert.alert('Invalid Email', 'Please enter a valid email address.');
       } else {
         Alert.alert('Signup Failed', err.message);
       }
@@ -119,22 +106,39 @@ export default function SignupScreen({ navigation }) {
     }
   };
 
+  const handleGoogleSignUp = async () => {
+    setGoogleLoading(true);
+    try {
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+      const response = await GoogleSignin.signIn();
+      const idToken = response.idToken || response.data?.idToken;
+      
+      if (!idToken) throw new Error('No ID Token recovered from Google.');
+
+      const credential = GoogleAuthProvider.credential(idToken);
+      const userCredential = await signInWithCredential(auth, credential);
+      const user = userCredential.user;
+
+      await ensureUserProfile(user);
+    } catch (err) {
+      if (err.code !== 'ASYNC_OP_IN_PROGRESS') {
+        Alert.alert('Google Sign-In Failed', err.message);
+      }
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
   return (
     <View style={styles.safe}>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent={true} />
       
-      {/* 🚀 CUSTOM TOPOGRAPHIC BACKGROUND */}
       <Image 
         source={require('../../assets/images/app-bg.png')} 
         style={styles.bgPattern} 
       />
       
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
-        style={styles.container}
-      >
-        
-        {/* Floating Back Button */}
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
         <TouchableOpacity 
           style={[styles.backBtn, { top: Math.max(insets.top + 16, 16) }]} 
           onPress={() => navigation.goBack()}
@@ -152,11 +156,8 @@ export default function SignupScreen({ navigation }) {
             }
           ]}
         >
-          
           <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
-            
             <View style={styles.headerBox}>
-              {/* 🚀 MOVED ICON TO THE RIGHT INLINE WITH TITLE */}
               <View style={styles.titleRow}>
                 <Text style={styles.title}>Join the Network</Text>
                 <View style={styles.iconBg}>
@@ -167,7 +168,6 @@ export default function SignupScreen({ navigation }) {
             </View>
 
             <View style={styles.form}>
-              {/* Name Input */}
               <View style={styles.inputWrapper}>
                 <Text style={styles.label}>Full Name</Text>
                 <View style={styles.inputContainer}>
@@ -182,7 +182,6 @@ export default function SignupScreen({ navigation }) {
                 </View>
               </View>
 
-              {/* Email Input */}
               <View style={styles.inputWrapper}>
                 <Text style={styles.label}>Email Address</Text>
                 <View style={styles.inputContainer}>
@@ -199,7 +198,6 @@ export default function SignupScreen({ navigation }) {
                 </View>
               </View>
 
-              {/* Password Input */}
               <View style={styles.inputWrapper}>
                 <Text style={styles.label}>Password</Text>
                 <View style={[styles.inputContainer, passwordError ? styles.inputError : null]}>
@@ -212,7 +210,6 @@ export default function SignupScreen({ navigation }) {
                     value={password} 
                     onChangeText={setPassword} 
                   />
-                  {/* 🚀 Eye Icon Toggle */}
                   <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
                     <MaterialCommunityIcons 
                       name={showPassword ? "eye-outline" : "eye-off-outline"} 
@@ -224,7 +221,6 @@ export default function SignupScreen({ navigation }) {
                 {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
               </View>
 
-              {/* Confirm Password Input */}
               <View style={styles.inputWrapper}>
                 <Text style={styles.label}>Confirm Password</Text>
                 <View style={[styles.inputContainer, passwordError ? styles.inputError : null]}>
@@ -237,7 +233,6 @@ export default function SignupScreen({ navigation }) {
                     value={confirmPassword} 
                     onChangeText={setConfirmPassword} 
                   />
-                  {/* 🚀 Eye Icon Toggle */}
                   <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
                     <MaterialCommunityIcons 
                       name={showConfirmPassword ? "eye-outline" : "eye-off-outline"} 
@@ -248,11 +243,10 @@ export default function SignupScreen({ navigation }) {
                 </View>
               </View>
 
-              {/* Submit Button */}
               <TouchableOpacity 
-                style={[styles.submitBtn, loading && styles.submitBtnDisabled]} 
+                style={[styles.submitBtn, (loading || googleLoading) && styles.submitBtnDisabled]} 
                 onPress={handleSignup} 
-                disabled={loading}
+                disabled={loading || googleLoading}
                 activeOpacity={0.8}
               >
                 {loading ? (
@@ -262,9 +256,32 @@ export default function SignupScreen({ navigation }) {
                 )}
               </TouchableOpacity>
 
+              {/* 🚀 OR DIVIDER */}
+              <View style={styles.dividerContainer}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>OR</Text>
+                <View style={styles.dividerLine} />
+              </View>
+
+              {/* 🚀 GOOGLE BUTTON */}
+              <TouchableOpacity 
+                style={styles.googleBtn} 
+                onPress={handleGoogleSignUp} 
+                disabled={loading || googleLoading}
+                activeOpacity={0.8}
+              >
+                {googleLoading ? (
+                  <ActivityIndicator color={COLORS.primary} />
+                ) : (
+                  <View style={styles.googleBtnContent}>
+                    <MaterialCommunityIcons name="google" size={20} color={COLORS.primary} style={styles.googleIcon} />
+                    <Text style={styles.googleBtnText}>Continue with Google</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+
             </View>
           </Animated.View>
-
         </ScrollView>
       </KeyboardAvoidingView>
     </View>
@@ -275,42 +292,32 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: COLORS.background },
   container: { flex: 1 },
   scrollContent: { flexGrow: 1, paddingHorizontal: 24 },
-  
-  // 🚀 Background Pattern
-  bgPattern: {
-    position: 'absolute',
-    width: '100%',
-    height: '100%',
-    opacity: 0.15,
-    resizeMode: 'cover',
-  },
-
-  // Back Button
+  bgPattern: { position: 'absolute', width: '100%', height: '100%', opacity: 0.15, resizeMode: 'cover' },
   backBtn: { position: 'absolute', left: 24, padding: 10, backgroundColor: 'rgba(255,255,255,0.7)', borderRadius: 14, borderWidth: 1, borderColor: COLORS.border, zIndex: 10 },
-  
-  // Header section
   headerBox: { marginBottom: 32 },
-  
-  // 🚀 NEW: Title Row to position icon on the right
   titleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 },
   title: { flex: 1, fontFamily: 'Poppins_900Black', fontSize: 36, color: COLORS.primary, letterSpacing: -1, lineHeight: 40 },
-  iconBg: { width: 48, height: 48, borderRadius: 14, backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center', transform: [{ rotate: '10deg' }] }, // Tilted the other way!
-  
+  iconBg: { width: 48, height: 48, borderRadius: 14, backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center', transform: [{ rotate: '10deg' }] }, 
   subtitle: { fontFamily: 'Urbanist_600SemiBold', fontSize: 16, color: COLORS.primary, opacity: 0.8, lineHeight: 22 },
   
-  // Form
-  form: { gap: 20 },
-  inputWrapper: { gap: 8 },
+  form: { gap: 16 },
+  inputWrapper: { gap: 6 },
   label: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 14, color: COLORS.primary, marginLeft: 4, letterSpacing: -0.3 },
-  
-  // 🚀 FIXED: Slimmer Input Container (paddingVertical reduced to 12)
   inputContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.surface, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 12, borderWidth: 1, borderColor: COLORS.border, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.03, shadowRadius: 8, elevation: 2 },
   inputError: { borderColor: COLORS.error, borderWidth: 1.5 },
-  input: { flex: 1, marginLeft: 12, marginRight: 8, fontFamily: 'Urbanist_600SemiBold', fontSize: 15, color: COLORS.textDark, height: 36 }, // Added explicit height to standardize cross-platform
+  input: { flex: 1, marginLeft: 12, marginRight: 8, fontFamily: 'Urbanist_600SemiBold', fontSize: 15, color: COLORS.textDark, height: 36 }, 
   errorText: { fontFamily: 'Urbanist_600SemiBold', color: COLORS.error, fontSize: 12, marginLeft: 4, marginTop: 2, lineHeight: 16 },
   
-  // Submit Button
-  submitBtn: { backgroundColor: COLORS.primary, borderRadius: 16, paddingVertical: 20, alignItems: 'center', marginTop: 16, shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.2, shadowRadius: 12, elevation: 5 },
+  submitBtn: { backgroundColor: COLORS.primary, borderRadius: 16, paddingVertical: 18, alignItems: 'center', marginTop: 8, shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.2, shadowRadius: 12, elevation: 5 },
   submitBtnDisabled: { opacity: 0.7 },
   submitText: { fontFamily: 'Urbanist_800ExtraBold', color: COLORS.surface, fontSize: 16, letterSpacing: -0.3 },
+
+  dividerContainer: { flexDirection: 'row', alignItems: 'center', marginVertical: 4 },
+  dividerLine: { flex: 1, height: 1, backgroundColor: COLORS.primary, opacity: 0.15 },
+  dividerText: { fontFamily: 'Urbanist_800ExtraBold', color: COLORS.primary, opacity: 0.4, fontSize: 12, textAlign: 'center', width: 40 },
+
+  googleBtn: { backgroundColor: COLORS.surface, borderRadius: 16, paddingVertical: 18, alignItems: 'center', borderWidth: 1, borderColor: COLORS.border, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.03, shadowRadius: 8, elevation: 2 },
+  googleBtnContent: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+  googleIcon: { marginRight: 10 },
+  googleBtnText: { fontFamily: 'Urbanist_800ExtraBold', color: COLORS.primary, fontSize: 16, letterSpacing: -0.3 },
 });

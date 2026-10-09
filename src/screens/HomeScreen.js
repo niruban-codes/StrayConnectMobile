@@ -73,6 +73,7 @@ export default function HomeScreen({ navigation }) {
       })
     ]).start();
 
+    // ── FETCH ANIMALS ──
     const qAnimals = query(
       collection(db, 'animals'),
       where('status', 'in', ['stray', 'sheltered','lost']),
@@ -82,13 +83,35 @@ export default function HomeScreen({ navigation }) {
       setRecentAnimals(snapshot.docs.map(d => ({ ...d.data(), id: d.id })));
     });
 
+    // ── FETCH EVENTS (WITH AUTO-HIDE LOGIC) ──
     const qEvents = query(
       collection(db, 'events'),
       where('status', '==', 'approved')
     );
+    
     const unsubEvents = onSnapshot(qEvents, (snapshot) => {
-      const fetchedEvents = snapshot.docs.map(d => ({ ...d.data(), id: d.id }));
-      fetchedEvents.sort((a, b) => (a.date?.toMillis() || 0) - (b.date?.toMillis() || 0));
+      // 1. Get current date, but set time to 00:00:00 
+      // This ensures today's events stay visible all day until midnight passes.
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const fetchedEvents = snapshot.docs
+        .map(d => ({ ...d.data(), id: d.id }))
+        .filter(event => {
+          // 2. Parse the event date safely
+          const eventDate = event.date?.toDate ? event.date.toDate() : new Date(event.dateString);
+          
+          // 3. ONLY keep events where the date is today or in the future
+          return eventDate >= today;
+        });
+
+      // 4. Sort the remaining upcoming events chronologically
+      fetchedEvents.sort((a, b) => {
+        const dateA = a.date?.toDate ? a.date.toDate() : new Date(a.dateString);
+        const dateB = b.date?.toDate ? b.date.toDate() : new Date(b.dateString);
+        return dateA - dateB;
+      });
+
       setUpcomingEvents(fetchedEvents);
     });
 
@@ -192,19 +215,6 @@ export default function HomeScreen({ navigation }) {
             </TouchableOpacity>
           </View>
 
-          {/* 🌟 EMERGENCY BANNER */}
-          <TouchableOpacity style={styles.emergencyBanner} activeOpacity={0.85}>
-            <View style={styles.emergencyLeft}>
-              <View style={styles.emergencyIconBg}>
-                <MaterialCommunityIcons name="alert-rhombus" size={24} color={COLORS.pinkRed} />
-              </View>
-              <View style={{ marginLeft: 12 }}>
-                <Text style={styles.emergencyTitle}>Emergency Rescue</Text>
-                <Text style={styles.emergencySubtitle}>Report an animal in immediate danger</Text>
-              </View>
-            </View>
-            <MaterialCommunityIcons name="chevron-right" size={24} color={COLORS.pinkRed} />
-          </TouchableOpacity>
 
           {/* 🌟 EXCITING EVENTS */}
           <View style={styles.sectionHeader}>
@@ -292,7 +302,6 @@ export default function HomeScreen({ navigation }) {
                     <View style={styles.cardInfo}>
                       <Text style={styles.cardTitle} numberOfLines={1}>{item.name || 'Unnamed Pet'}</Text>
                       <View style={styles.cardDetailsRow}>
-                        {/* 🚀 Updated inline font families */}
                         <Text style={styles.cardDetailText}>Gene: <Text style={{fontFamily: 'Urbanist_800ExtraBold', color: COLORS.textMuted}}>{item.species}</Text></Text>
                         <Text style={styles.cardDetailDot}>•</Text>
                         <Text style={styles.cardDetailText}>Loc: <Text style={{fontFamily: 'Urbanist_800ExtraBold', color: COLORS.textMuted}}>{item.location || 'Unknown'}</Text></Text>
@@ -348,7 +357,6 @@ export default function HomeScreen({ navigation }) {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: COLORS.background },
   
-  // 🚀 New Background Image Style
   bgPattern: {
     position: 'absolute',
     width: '100%',
@@ -370,15 +378,13 @@ const styles = StyleSheet.create({
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   
-  // 🚀 Custom Logo Style
   headerLogoIcon: { 
-    width: 28,  // Bumped up slightly so it matches the text nicely
+    width: 28,  
     height: 28, 
     resizeMode: 'contain',
-    borderRadius: 6, // Optional: smooths the edges if it has a white background
+    borderRadius: 6, 
   },
   
-  // 🚀 Typography Updates mapped to Poppins/Urbanist
   logo: { fontFamily: 'Poppins_900Black', fontSize: 22, color: COLORS.primary, letterSpacing: -0.5 },
   notifBtn: { position: 'relative', padding: 8 },
   notifDot: { position: 'absolute', top: 8, right: 10, width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.pinkRed, borderWidth: 1.5, borderColor: COLORS.background },
@@ -386,57 +392,47 @@ const styles = StyleSheet.create({
   scroll: { flex: 1 },
   scrollContent: { paddingHorizontal: 20, paddingBottom: 40 },
   
-  // Greeting Section
   section: { marginBottom: 24 },
   greeting: { fontFamily: 'Poppins_900Black', fontSize: 36, color: COLORS.primary, letterSpacing: -1, lineHeight: 40 },
   subGreeting: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 22, color: COLORS.primary, marginTop: 4 },
   greetingDesc: { fontFamily: 'Urbanist_500Medium', fontSize: 13, color: COLORS.textMuted, marginTop: 12, lineHeight: 20, paddingRight: 20 },
   
-  // Quick Actions (Buttons)
   quickActions: { flexDirection: 'row', gap: 12, marginBottom: 28 },
   actionBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, borderRadius: 999, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
   actionBtnText: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 14, letterSpacing: 0.5 },
 
-  // Emergency Banner
   emergencyBanner: { backgroundColor: '#FFF', borderRadius: 20, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32, borderWidth: 1, borderColor: '#FFE4E1', shadowColor: COLORS.pinkRed, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.15, shadowRadius: 16, elevation: 4 },
   emergencyLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
   emergencyIconBg: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#FFEBEE', alignItems: 'center', justifyContent: 'center' },
   emergencyTitle: { fontFamily: 'Urbanist_800ExtraBold', color: COLORS.primary, fontSize: 15 },
   emergencySubtitle: { fontFamily: 'Urbanist_500Medium', color: COLORS.textMuted, fontSize: 12, marginTop: 2 },
   
-  // Section Headers
   sectionHeader: { marginBottom: 16 },
   sectionSubtitle: { fontFamily: 'Urbanist_600SemiBold', fontSize: 13, color: COLORS.textMuted, marginBottom: 2 },
   sectionTitle: { fontFamily: 'Poppins_900Black', fontSize: 20, color: COLORS.primary, letterSpacing: -0.5 },
   
-  // Empty State
   emptyState: { alignItems: 'center', paddingVertical: 32, gap: 8, marginBottom: 24, backgroundColor: 'rgba(255,255,255,0.7)', borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.9)' },
   emptyText: { fontFamily: 'Urbanist_600SemiBold', color: COLORS.textMuted, fontSize: 13 },
   
-  // Monito Style Cards
   card: { width: 180, backgroundColor: COLORS.surface, borderRadius: 20, marginRight: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 3 },
   cardImageContainer: { width: '100%', height: 160, padding: 8 },
   cardImage: { width: '100%', height: '100%', borderRadius: 12, resizeMode: 'cover' },
   placeholderBg: { backgroundColor: COLORS.surfaceOff, alignItems: 'center', justifyContent: 'center' },
   
-  // Card Text Info
   cardInfo: { padding: 12, paddingTop: 4 },
   cardTitle: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 15, color: COLORS.primary, marginBottom: 6 },
   cardSub: { fontFamily: 'Urbanist_600SemiBold', fontSize: 11, color: COLORS.textMuted },
   
-  // Animal Specific Details
   cardDetailsRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
   cardDetailText: { fontFamily: 'Urbanist_500Medium', fontSize: 10, color: COLORS.textMuted },
   cardDetailDot: { fontSize: 10, color: COLORS.border, marginHorizontal: 6 },
   statusBadge: { alignSelf: 'flex-start', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 },
   statusText: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 10, textTransform: 'capitalize' },
   
-  // Event Specific Details
   dateBadge: { position: 'absolute', top: 16, right: 16, backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, alignItems: 'center' },
   dateMonth: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 9, color: COLORS.pinkRed, textTransform: 'uppercase' },
   dateDay: { fontFamily: 'Poppins_900Black', fontSize: 14, color: COLORS.primary },
 
-  // Get Involved Lists
   communityActions: { gap: 12 },
   listCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.8)', borderRadius: 20, padding: 16, gap: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.04, shadowRadius: 8, elevation: 2 },
   listIconBg: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },

@@ -2,12 +2,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   View, Text, StyleSheet, FlatList, TouchableOpacity, 
-  ActivityIndicator, Alert, StatusBar, Animated, Image 
+  ActivityIndicator, Alert, StatusBar, Animated, Image, Linking
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context'; 
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { db, auth } from '../../firebase';
 import { collection, query, where, onSnapshot, doc, updateDoc } from 'firebase/firestore';
+import { notificationDetails } from '../utils/notificationDetails';
 
 // 🎨 "MONITO" COLOR PALETTE 
 const COLORS = {
@@ -49,7 +50,7 @@ export default function NotificationsScreen({ navigation }) {
     ]).start();
 
     const currentUser = auth.currentUser;
-    if (!currentUser) return;
+    if (!currentUser) { setLoading(false); return; }
 
     // Fetch alerts only for the logged-in user
     const q = query(
@@ -68,23 +69,32 @@ export default function NotificationsScreen({ navigation }) {
       
       setNotifications(notifs);
       setLoading(false);
+    }, () => {
+      setLoading(false);
+      Alert.alert('Notifications unavailable', 'Please check your connection and try again.');
     });
 
     return () => unsubscribe();
   }, []);
 
   const handleNotificationPress = async (item) => {
-    // 1. Mark as read in Firestore
+    const details = notificationDetails(item);
+    const buttons = [{ text: 'OK' }];
+    if (details.mapUrl) buttons.unshift({
+      text: 'Open map',
+      onPress: () => Linking.openURL(details.mapUrl).catch(() => {
+        Alert.alert('Unable to open map', 'Please try again or use the coordinates shown in the notification.');
+      }),
+    });
+    Alert.alert(details.title, details.message, buttons);
+    // A failed read receipt must not prevent the owner from seeing the message.
     if (!item.isRead) {
-      const notifRef = doc(db, 'notifications', item.id);
-      await updateDoc(notifRef, { isRead: true });
+      try {
+        await updateDoc(doc(db, 'notifications', item.id), { isRead: true });
+      } catch (error) {
+        console.warn('Could not mark notification as read:', error.message);
+      }
     }
-
-    // 2. Show the exact GPS coordinates (Later we can open a map here!)
-    Alert.alert(
-      "Sighting Details", 
-      `Coordinates:\nLat: ${item.latitude || 'N/A'}\nLng: ${item.longitude || 'N/A'}\n\nWe will add a Google Maps link here soon!`
-    );
   };
 
   const renderItem = ({ item }) => (
