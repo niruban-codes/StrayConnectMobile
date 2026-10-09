@@ -8,6 +8,7 @@ export function notificationDetails(item) {
     return {
       title,
       message: `${message}\n\nLatitude: ${latitude}\nLongitude: ${longitude}`,
+      directionsUrl: `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${latitude},${longitude}`)}&dir_action=navigate`,
       mapUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${latitude},${longitude}`)}`,
     };
   }

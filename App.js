@@ -24,10 +24,10 @@ import {
 } from '@expo-google-fonts/urbanist';
 
 // IMPORT DB AND EXPO TOOLS HERE
-import { auth, db } from './firebase'; 
+import { auth } from './firebase';
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
-import { doc, setDoc } from 'firebase/firestore';
+import { pushSession } from './src/services/pushSession';
 import appConfig from './app.json';
 
 import HomeScreen from './src/screens/HomeScreen';
@@ -171,6 +171,8 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    pushSession.activate(user?.uid || null);
+    let cancelled = false;
     async function registerForPushNotificationsAsync() {
       if (!user) return; 
       try {
@@ -193,7 +195,7 @@ export default function App() {
             const tokenData = await Notifications.getExpoPushTokenAsync({
               projectId: appConfig.expo.extra.eas.projectId,
             });
-            await setDoc(doc(db, 'users', user.uid), { expoPushToken: tokenData.data, email: user.email }, { merge: true });
+            if (!cancelled) await pushSession.register(user.uid, tokenData.data);
           } catch (expoError) {
             console.log("Push notification registration failed: ", expoError.message);
           }
@@ -203,6 +205,7 @@ export default function App() {
       }
     }
     registerForPushNotificationsAsync();
+    return () => { cancelled = true; };
   }, [user]);
 
   // 🚀 Callback to hide splash screen once everything is loaded

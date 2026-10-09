@@ -8,7 +8,9 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'; 
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { db, auth } from '../../firebase';
-import { collection, addDoc, doc, updateDoc, onSnapshot } from 'firebase/firestore';
+import { collection, doc, runTransaction, onSnapshot } from 'firebase/firestore';
+
+import { changePetStatus } from '../utils/petStatus';
 
 // 🎨 "MONITO" COLOR PALETTE 
 const COLORS = {
@@ -101,6 +103,7 @@ export default function AnimalDetailScreen({ route, navigation }) {
   };
 
   const handleAdoptPress = () => {
+    if (currentStatus === 'archived') { Alert.alert('Archived passport', 'This animal is not available for adoption.'); return; }
     if (currentStatus === 'adopted') {
       Alert.alert('Already Adopted', `${animal.name || 'This pet'} has already found a forever home!`);
       return;
@@ -134,7 +137,7 @@ export default function AnimalDetailScreen({ route, navigation }) {
           onPress: async () => {
             try {
               const animalRef = doc(db, 'animals', animal.id || animal.animalId);
-              await updateDoc(animalRef, { status: 'sheltered' }); 
+              await runTransaction(db, tx => changePetStatus(tx, animalRef, auth.currentUser?.uid, 'owned', { status: 'sheltered' }));
               Alert.alert("Success", `${animal.name} is now listed for adoption.`);
             } catch (error) {
               Alert.alert("Error", "Could not update pet status. Please try again.");
@@ -153,7 +156,11 @@ export default function AnimalDetailScreen({ route, navigation }) {
 
     setSubmitting(true);
     try {
-      await addDoc(collection(db, 'adoptionRequests'), {
+      const requestRef = doc(collection(db, 'adoptionRequests'));
+      await runTransaction(db, async tx => {
+        const snapshot = await tx.get(doc(db, 'animals', animal.id));
+        if (!snapshot.exists() || !['stray', 'sheltered'].includes(snapshot.data().status)) throw new Error('This animal is no longer available for adoption.');
+        tx.set(requestRef, {
         animalId: animal.id || animal.animalId,
         animalName: animal.name || 'Unnamed Pet',
         animalSCID: animal.animalId || 'No ID',
@@ -167,6 +174,7 @@ export default function AnimalDetailScreen({ route, navigation }) {
         createdAt: new Date(),
       });
 
+      });
       setIsModalVisible(false);
       setMessage(''); 
       Alert.alert(
@@ -415,7 +423,7 @@ export default function AnimalDetailScreen({ route, navigation }) {
           <MaterialCommunityIcons name="phone-outline" size={26} color={COLORS.primary} />
         </TouchableOpacity>
 
-        {currentStatus === 'owned' && isOwner ? (
+        {currentStatus === 'archived' ? (<Text style={{ color: COLORS.textMuted }}>Archived passport — medical history remains available.</Text>) : currentStatus === 'owned' && isOwner ? (
           <TouchableOpacity 
             style={[styles.primaryBtn, { backgroundColor: COLORS.orangeShine }]} 
             onPress={handleOwnerRehome}

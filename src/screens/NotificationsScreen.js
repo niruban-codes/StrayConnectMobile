@@ -77,32 +77,39 @@ export default function NotificationsScreen({ navigation }) {
     return () => unsubscribe();
   }, []);
 
-  const handleNotificationPress = async (item) => {
+  const markRead = async item => {
+    if (item.isRead) return;
+    try { await updateDoc(doc(db, 'notifications', item.id), { isRead: true }); }
+    catch (error) { console.warn('Could not mark notification as read:', error.message); }
+  };
+  const openDirections = async item => {
     const details = notificationDetails(item);
-    const buttons = [{ text: 'OK' }];
-    if (details.mapUrl) buttons.unshift({
-      text: 'Open map',
-      onPress: () => Linking.openURL(details.mapUrl).catch(() => {
-        Alert.alert('Unable to open map', 'Please try again or use the coordinates shown in the notification.');
-      }),
-    });
-    Alert.alert(details.title, details.message, buttons);
-    // A failed read receipt must not prevent the owner from seeing the message.
-    if (!item.isRead) {
-      try {
-        await updateDoc(doc(db, 'notifications', item.id), { isRead: true });
-      } catch (error) {
-        console.warn('Could not mark notification as read:', error.message);
-      }
+    if (!details.directionsUrl) return;
+    try {
+      await Linking.openURL(details.directionsUrl);
+      void markRead(item);
+    } catch {
+      Alert.alert('Unable to open maps', `Open your maps app and enter: ${item.latitude}, ${item.longitude}`);
     }
+  };
+  const handleNotificationPress = item => {
+    const details = notificationDetails(item);
+    const buttons = [{ text: 'Close', style: 'cancel' }];
+    if (details.mapUrl) {
+      buttons.push({ text: 'View pin', onPress: () => Linking.openURL(details.mapUrl).catch(() => {
+        Alert.alert('Unable to open maps', `Coordinates: ${item.latitude}, ${item.longitude}`);
+      }) });
+      buttons.push({ text: 'Get directions', onPress: () => openDirections(item) });
+    }
+    Alert.alert(details.title, details.message, buttons);
+    void markRead(item);
   };
 
   const renderItem = ({ item }) => (
-    <TouchableOpacity 
-      style={[styles.card, !item.isRead && styles.unreadCard]} 
-      activeOpacity={0.8}
-      onPress={() => handleNotificationPress(item)}
+    <View
+      style={[styles.card, { flexDirection: 'column', alignItems: 'stretch' }, !item.isRead && styles.unreadCard]}
     >
+      <TouchableOpacity style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }} accessibilityRole="button" onPress={() => handleNotificationPress(item)}>
       <View style={[styles.iconBg, !item.isRead ? { backgroundColor: COLORS.primary } : { backgroundColor: '#EBEEEF' }]}>
         <MaterialCommunityIcons 
           name={item.type === 'event_update' ? "calendar-star" : "map-marker-radius"} 
@@ -120,7 +127,13 @@ export default function NotificationsScreen({ navigation }) {
       </View>
 
       {!item.isRead && <View style={styles.unreadDot} />}
-    </TouchableOpacity>
+      </TouchableOpacity>
+      {notificationDetails(item).directionsUrl && <TouchableOpacity style={styles.directionsButton}
+        accessibilityRole="button" accessibilityLabel="Get directions to this pet sighting" onPress={() => openDirections(item)}>
+        <MaterialCommunityIcons name="directions" size={20} color={COLORS.surface} />
+        <Text style={styles.directionsText}>Get directions to sighting</Text>
+      </TouchableOpacity>}
+    </View>
   );
 
   return (
@@ -167,6 +180,8 @@ export default function NotificationsScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
+  directionsButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, padding: 12, backgroundColor: COLORS.primary, borderRadius: 12, marginTop: 12 },
+  directionsText: { color: COLORS.surface, fontWeight: '700', fontSize: 13 },
   safe: { flex: 1, backgroundColor: COLORS.background },
   
   // 🚀 Background Pattern

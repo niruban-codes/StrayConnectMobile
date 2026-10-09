@@ -40,3 +40,13 @@ test('missing or invalid sighting coordinates never produce a broken map link', 
     assert.equal(notificationDetails({ type: 'sighting', ...coords }).mapUrl, undefined);
   }
 });
+
+test('sighting directions use the exact destination and let Maps choose the current origin', () => {
+  const details = notificationDetails({ type: 'sighting', latitude: 6.9271, longitude: 79.8612 });
+  const url = new URL(details.directionsUrl);
+  assert.equal(url.pathname, '/maps/dir/');
+  assert.equal(url.searchParams.get('destination'), '6.9271,79.8612');
+  assert.equal(url.searchParams.get('dir_action'), 'navigate');
+  assert.equal(url.searchParams.has('origin'), false);
+  assert.equal(notificationDetails({ type: 'sighting', latitude: null, longitude: 0 }).directionsUrl, undefined);
+});

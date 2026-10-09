@@ -1,9 +1,9 @@
 // src/screens/SettingsScreen.js
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, StatusBar, Image } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, StatusBar, Image, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { signOut } from 'firebase/auth';
+import { pushSession } from '../services/pushSession';
 import { auth } from '../../firebase';
 
 const COLORS = {
@@ -17,8 +17,16 @@ const COLORS = {
 export default function SettingsScreen({ navigation }) {
   const insets = useSafeAreaInsets();
 
+  const [signingOut, setSigningOut] = useState(false);
+  const logoutLock = useRef(false);
   const handleSignOut = async () => {
-    await signOut(auth);
+    if (logoutLock.current || !auth.currentUser) return;
+    logoutLock.current = true; setSigningOut(true);
+    try { await pushSession.logout(auth.currentUser.uid); }
+    catch (error) {
+      Alert.alert('Unable to sign out safely', 'Could not disconnect notifications. Check your connection and try again.');
+      logoutLock.current = false; setSigningOut(false);
+    }
   };
 
   return (
@@ -35,9 +43,9 @@ export default function SettingsScreen({ navigation }) {
       </View>
 
       <View style={styles.content}>
-        <TouchableOpacity style={styles.signOutBtn} onPress={handleSignOut}>
+        <TouchableOpacity style={styles.signOutBtn} onPress={handleSignOut} disabled={signingOut}>
           <MaterialCommunityIcons name="logout" size={20} color={COLORS.pinkRed} />
-          <Text style={styles.signOutText}>Sign Out</Text>
+          <Text style={styles.signOutText}>{signingOut ? 'Signing out…' : 'Sign Out'}</Text>
         </TouchableOpacity>
       </View>
     </View>

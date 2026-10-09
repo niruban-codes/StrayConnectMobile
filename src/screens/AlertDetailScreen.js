@@ -9,7 +9,9 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import axios from 'axios';
 import { db, auth } from '../../firebase';
-import { doc, updateDoc, onSnapshot } from 'firebase/firestore';
+import { doc, runTransaction, serverTimestamp, onSnapshot } from 'firebase/firestore';
+
+import { transitionRescue } from '../utils/rescueTransition';
 
 const { width } = Dimensions.get('window');
 
@@ -79,14 +81,10 @@ export default function AlertDetailScreen({ route, navigation }) {
           onPress: async () => {
             setSubmitting(true);
             try {
-              await updateDoc(doc(db, 'reports', alertItem.id), {
-                status: 'in_progress',
-                helperId: currentUser.uid,
-                helperName: currentUser.displayName || 'Community Member',
-                respondedAt: new Date()
-              });
+              await runTransaction(db, tx => transitionRescue(tx, doc(db, 'reports', alertItem.id),
+                'claim', { uid: currentUser.uid, name: currentUser.displayName }, serverTimestamp()));
             } catch (error) {
-              Alert.alert("Error", "Could not assign rescue. Please try again.");
+              Alert.alert("Error", error.message || "Could not assign rescue. Please try again.");
             } finally {
               setSubmitting(false);
             }
@@ -120,16 +118,13 @@ export default function AlertDetailScreen({ route, navigation }) {
           { headers: { 'Content-Type': 'multipart/form-data' } }
         );
 
-        await updateDoc(doc(db, 'reports', alertItem.id), {
-          status: 'reviewing',
-          proofImageUrl: res.data.secure_url,
-          completedAt: new Date()
-        });
+        await runTransaction(db, tx => transitionRescue(tx, doc(db, 'reports', alertItem.id),
+          'proof', { uid: auth.currentUser?.uid }, serverTimestamp(), res.data.secure_url));
 
         Alert.alert("Proof Submitted! 🎉", "Thank you! An admin will review the photo and officially close this SOS ticket.");
       }
     } catch (error) {
-      Alert.alert("Error", "Failed to upload proof. Please try again.");
+      Alert.alert("Error", error.message || "Failed to upload proof. Please try again.");
     } finally {
       setSubmitting(false);
     }

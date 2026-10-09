@@ -8,7 +8,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { sendEmailVerification } from 'firebase/auth';
 import { db, auth } from '../../firebase';
-import { collection, query, onSnapshot, where, doc, updateDoc, or } from 'firebase/firestore';
+import { collection, query, onSnapshot, where, doc, runTransaction, or } from 'firebase/firestore';
+
+import { changePetStatus } from '../utils/petStatus';
 
 // 🎨 "MONITO" COLOR PALETTE
 const COLORS = {
@@ -117,10 +119,10 @@ export default function ProfileScreen({ navigation }) {
           onPress: async () => {
             try {
               const petRef = doc(db, 'animals', pet.id);
-              await updateDoc(petRef, { 
+              await runTransaction(db, tx => changePetStatus(tx, petRef, auth.currentUser?.uid, pet.status, {
                 status: 'lost',
                 reportedLostAt: new Date() 
-              });
+              }));
               Alert.alert("SOS Sent 🚨", `${pet.name} is now on the community missing feed.`);
             } catch (error) {
               Alert.alert("Error", "Failed to send SOS. Please try again.");
@@ -143,10 +145,10 @@ export default function ProfileScreen({ navigation }) {
           onPress: async () => {
             try {
               const petRef = doc(db, 'animals', pet.id);
-              await updateDoc(petRef, { 
+              await runTransaction(db, tx => changePetStatus(tx, petRef, auth.currentUser?.uid, pet.status, {
                 status: 'owned',
                 reportedLostAt: null 
-              });
+              }));
               Alert.alert("Welcome Home 🎉", `${pet.name} has been removed from the missing list.`);
             } catch (error) {
               Alert.alert("Error", "Failed to update status.");
@@ -325,7 +327,7 @@ export default function ProfileScreen({ navigation }) {
                     <Text style={styles.actionBtnText}>Vaccines</Text>
                   </TouchableOpacity>
 
-                  {pet.status === 'lost' ? (
+                  {pet.status === 'archived' ? (<Text style={styles.actionBtnText}>Archived</Text>) : pet.status === 'lost' ? (
                     <TouchableOpacity 
                       style={[styles.actionBtn, { backgroundColor: '#E8F5E9' }]}
                       onPress={() => handleMarkFound(pet)}

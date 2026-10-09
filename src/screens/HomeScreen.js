@@ -6,7 +6,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { db } from '../../firebase';
+import { db, auth } from '../../firebase';
 import { collection, query, limit, onSnapshot, where } from 'firebase/firestore';
 
 const { width } = Dimensions.get('window');
@@ -34,6 +34,14 @@ export default function HomeScreen({ navigation }) {
 
   const [recentAnimals, setRecentAnimals] = useState([]);
   const [upcomingEvents, setUpcomingEvents] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  useEffect(() => {
+    const uid = auth.currentUser?.uid;
+    if (!uid) return;
+    return onSnapshot(query(collection(db, 'notifications'), where('userId', '==', uid)), snapshot => {
+      setUnreadCount(snapshot.docs.filter(item => !item.data().isRead).length);
+    }, () => setUnreadCount(0));
+  }, []);
 
   // 🚀 ENTRANCE ANIMATION VALUES
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -163,9 +171,9 @@ export default function HomeScreen({ navigation }) {
           />
           <Text style={styles.logo}>StrayConnect</Text>
         </View>
-        <TouchableOpacity style={styles.notifBtn} onPress={() => navigation.navigate('Notifications')}>
+        <TouchableOpacity accessibilityLabel={`Notifications, ${unreadCount} unread`} style={styles.notifBtn} onPress={() => navigation.navigate('Notifications')}>
           <MaterialCommunityIcons name="bell-outline" size={24} color={COLORS.primary} />
-          <View style={styles.notifDot} />
+          {unreadCount > 0 && <View style={styles.notifBadge}><Text style={styles.notifBadgeText}>{unreadCount > 99 ? '99+' : unreadCount}</Text></View>}
         </TouchableOpacity>
       </Animated.View>
 
@@ -387,6 +395,8 @@ const styles = StyleSheet.create({
   
   logo: { fontFamily: 'Poppins_900Black', fontSize: 22, color: COLORS.primary, letterSpacing: -0.5 },
   notifBtn: { position: 'relative', padding: 8 },
+  notifBadge: { position: 'absolute', top: 0, right: 0, minWidth: 18, height: 18, paddingHorizontal: 4, borderRadius: 9, backgroundColor: COLORS.pinkRed, alignItems: 'center', justifyContent: 'center' },
+  notifBadgeText: { color: '#fff', fontSize: 10, fontWeight: '800' },
   notifDot: { position: 'absolute', top: 8, right: 10, width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.pinkRed, borderWidth: 1.5, borderColor: COLORS.background },
   
   scroll: { flex: 1 },

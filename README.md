@@ -60,3 +60,34 @@ Firestore permissions, maps, or notification delivery; test those on the phone.
 The existing `eas.json` also contains a development profile for cloud builds.
 For an EAS build, the ignored local configuration files must be made available
 to the build separately.
+
+## Sighting map setup
+
+The Android Maps SDK needs an API key embedded in the native application.
+`app.config.js` uses `GOOGLE_MAPS_ANDROID_API_KEY` from the local environment,
+falling back to the existing `EXPO_PUBLIC_GOOGLE_PLACES_API_KEY` for development.
+Never commit the values. For production, use a dedicated Android Maps key with
+package/signing-certificate restrictions; configure Places search credentials separately.
+Enable Maps SDK for Android for the native key and the appropriate Places API for
+search in the owning Google Cloud project. Cloud API access/billing and key
+restrictions cannot be verified by the local regression tests.
+
+After adding/changing the native key, regenerate and rebuild once:
+
+```powershell
+npx expo prebuild --platform android --no-install
+npm run android -- --device
+```
+
+Subsequent map UI changes only need Metro and a reload. The map supports tapping,
+long-pressing or dragging the pin, debounced place search, and Android foreground
+location permission on demand. Search/location failure leaves manual selection available.
+Coordinates and optional notes are shared only after confirmation. Sightings and
+owner in-app notifications save atomically and reject pets no longer marked lost.
+The deployed Firestore rules must permit the reporter's transaction to read the
+animal and its own sighting path, create the sighting, and create its linked owner
+notification. Existing rules have not been modified.
+
+Run regression tests with `node --test tests/*.test.mjs`. On a phone, verify map
+tiles load, search results appear, denied GPS permission still permits pin placement,
+and a test sighting produces exactly one owner notification.
