@@ -1,3 +1,4 @@
+import { eventDateLabel } from '../utils/eventDate';
 // src/screens/EventDetailScreen.js
 import React, { useEffect, useRef } from 'react';
 import { 
@@ -48,9 +49,7 @@ export default function EventDetailScreen({ route, navigation }) {
     ]).start();
   }, []);
 
-  const eventDate = event.date?.toDate ? event.date.toDate() : (event.date ? new Date(event.date) : new Date());
-  const dateString = eventDate.toLocaleDateString([], { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-  const displayDate = event.dateString || dateString;
+  const displayDate = eventDateLabel(event);
 
   return (
     <View style={styles.container}>

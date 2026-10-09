@@ -1,3 +1,6 @@
+import { upcomingEvents as filterUpcomingEvents, eventStart } from '../utils/eventDate';
+import { useFeedStatus } from '../hooks/useFeedStatus';
+import FeedError from '../components/FeedError';
 // src/screens/HomeScreen.js
 import React, { useEffect, useState, useRef } from 'react';
 import {
@@ -30,18 +33,25 @@ const COLORS = {
 const HEADER_HEIGHT = 60; 
 
 export default function HomeScreen({ navigation }) {
-  const insets = useSafeAreaInsets(); 
+  const insets = useSafeAreaInsets();
+  const { error: feedError, fail: failFeed, retry, retryKey } = useFeedStatus();
 
   const [recentAnimals, setRecentAnimals] = useState([]);
-  const [upcomingEvents, setUpcomingEvents] = useState([]);
+  const [events, setEvents] = useState([]);
+  const [clock, setClock] = useState(() => new Date());
+  const upcomingEvents = filterUpcomingEvents(events, clock);
+  useEffect(() => {
+    const timer = setInterval(() => setClock(new Date()), 60000);
+    return () => clearInterval(timer);
+  }, []);
   const [unreadCount, setUnreadCount] = useState(0);
   useEffect(() => {
     const uid = auth.currentUser?.uid;
     if (!uid) return;
     return onSnapshot(query(collection(db, 'notifications'), where('userId', '==', uid)), snapshot => {
       setUnreadCount(snapshot.docs.filter(item => !item.data().isRead).length);
-    }, () => setUnreadCount(0));
-  }, []);
+    }, failFeed);
+  }, [retryKey, failFeed]);
 
   // 🚀 ENTRANCE ANIMATION VALUES
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -89,7 +99,7 @@ export default function HomeScreen({ navigation }) {
     );
     const unsubAnimals = onSnapshot(qAnimals, (snapshot) => {
       setRecentAnimals(snapshot.docs.map(d => ({ ...d.data(), id: d.id })));
-    });
+    }, failFeed);
 
     // ── FETCH EVENTS (WITH AUTO-HIDE LOGIC) ──
     const qEvents = query(
@@ -98,33 +108,11 @@ export default function HomeScreen({ navigation }) {
     );
     
     const unsubEvents = onSnapshot(qEvents, (snapshot) => {
-      // 1. Get current date, but set time to 00:00:00 
-      // This ensures today's events stay visible all day until midnight passes.
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
-      const fetchedEvents = snapshot.docs
-        .map(d => ({ ...d.data(), id: d.id }))
-        .filter(event => {
-          // 2. Parse the event date safely
-          const eventDate = event.date?.toDate ? event.date.toDate() : new Date(event.dateString);
-          
-          // 3. ONLY keep events where the date is today or in the future
-          return eventDate >= today;
-        });
-
-      // 4. Sort the remaining upcoming events chronologically
-      fetchedEvents.sort((a, b) => {
-        const dateA = a.date?.toDate ? a.date.toDate() : new Date(a.dateString);
-        const dateB = b.date?.toDate ? b.date.toDate() : new Date(b.dateString);
-        return dateA - dateB;
-      });
-
-      setUpcomingEvents(fetchedEvents);
-    });
+      setEvents(snapshot.docs.map(item => ({ ...item.data(), id: item.id })));
+    }, failFeed);
 
     return () => { unsubAnimals(); unsubEvents(); };
-  }, []);
+  }, [retryKey, failFeed]);
 
   const statusColor = (status) => {
     switch (status) {
@@ -134,6 +122,8 @@ export default function HomeScreen({ navigation }) {
       default:          return { bg: '#FFF3E0', text: COLORS.orangeShine }; 
     }
   };
+
+  if (feedError) return <FeedError message={feedError} onRetry={retry} />;
 
   return (
     <View style={styles.safe}>
@@ -243,9 +233,9 @@ export default function HomeScreen({ navigation }) {
               keyExtractor={item => item.id}
               contentContainerStyle={{ paddingRight: 20, paddingBottom: 20 }}
               renderItem={({ item }) => {
-                const eventDate = item.date?.toDate ? item.date.toDate() : new Date();
-                const month = eventDate.toLocaleString('default', { month: 'short' });
-                const day = eventDate.getDate();
+                const eventDate = eventStart(item);
+                const month = eventDate.toLocaleString('en-GB', { month: 'short', timeZone: 'Asia/Colombo' });
+                const day = eventDate.toLocaleString('en-GB', { day: 'numeric', timeZone: 'Asia/Colombo' });
 
                 return (
                   <TouchableOpacity style={styles.card} activeOpacity={0.9} onPress={() => navigation.navigate('EventDetail', { event: item })}>

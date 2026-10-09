@@ -8,8 +8,10 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'; 
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { db, auth } from '../../firebase';
-import { collection, doc, runTransaction, onSnapshot } from 'firebase/firestore';
+import { collection, doc, runTransaction, onSnapshot, getDocs, query, where, serverTimestamp } from 'firebase/firestore';
 
+import { applicationId, submitAdoption } from '../utils/adoptionApplication';
+import { refreshVerifiedUser } from '../services/emailVerification';
 import { changePetStatus } from '../utils/petStatus';
 
 // 🎨 "MONITO" COLOR PALETTE 
@@ -102,7 +104,10 @@ export default function AnimalDetailScreen({ route, navigation }) {
     }
   };
 
-  const handleAdoptPress = () => {
+  const handleAdoptPress = async () => {
+    try { await refreshVerifiedUser(); }
+    catch (error) { Alert.alert('Unable to check verification', error.message); return; }
+    if (!animal.isVerified) { Alert.alert('Verification pending', 'This pet needs vet verification before adoption.'); return; }
     if (currentStatus === 'archived') { Alert.alert('Archived passport', 'This animal is not available for adoption.'); return; }
     if (currentStatus === 'adopted') {
       Alert.alert('Already Adopted', `${animal.name || 'This pet'} has already found a forever home!`);
@@ -154,32 +159,20 @@ export default function AnimalDetailScreen({ route, navigation }) {
       return;
     }
 
+    if (submitting) return;
     setSubmitting(true);
     try {
-      const requestRef = doc(collection(db, 'adoptionRequests'));
-      await runTransaction(db, async tx => {
-        const snapshot = await tx.get(doc(db, 'animals', animal.id));
-        if (!snapshot.exists() || !['stray', 'sheltered'].includes(snapshot.data().status)) throw new Error('This animal is no longer available for adoption.');
-        tx.set(requestRef, {
-        animalId: animal.id || animal.animalId,
-        animalName: animal.name || 'Unnamed Pet',
-        animalSCID: animal.animalId || 'No ID',
-        userId: currentUser.uid,
-        userName: currentUser.displayName || 'Unknown User',
-        userEmail: currentUser.email,
-        livingSituation,
-        experience,
-        message,
-        status: 'pending',
-        createdAt: new Date(),
-      });
-
-      });
+      const applicant = await refreshVerifiedUser();
+      if (!applicant) throw new Error('Please sign in again.');
+      const requestRef = doc(db, 'adoptionRequests', applicationId(animal.id, applicant.uid));
+      const legacy = await getDocs(query(collection(db, 'adoptionRequests'), where('animalId', '==', animal.id), where('userId', '==', applicant.uid)));
+      await runTransaction(db, tx => submitAdoption(tx, doc(db, 'animals', animal.id), requestRef, applicant,
+        { livingSituation, experience, message: message.trim() }, serverTimestamp(), legacy.docs.filter(item => item.id !== requestRef.id).map(item => item.ref)));
       setIsModalVisible(false);
       setMessage(''); 
       Alert.alert(
         'Application Sent! 🐾', 
-        `The sanctuary has received your inquiry for ${animal.name || 'this pet'}. \n\nPlease visit the shelter within the next 48 hours or call them to arrange an interview.`,
+        `The sanctuary has received your inquiry for ${animal.name || 'this pet'}. \n\nTrack your application in Profile under My adoption applications. The shelter will review your request.`,
         [{ text: 'I will do that!' }]
       );
     } catch (error) {
@@ -447,10 +440,10 @@ export default function AnimalDetailScreen({ route, navigation }) {
           <TouchableOpacity 
             style={[styles.primaryBtn, currentStatus === 'adopted' && { backgroundColor: 'rgba(0, 52, 89, 0.1)', shadowOpacity: 0 }]} 
             onPress={handleAdoptPress}
-            disabled={currentStatus === 'adopted'}
+            disabled={currentStatus === 'adopted' || !animal.isVerified}
           >
             <Text style={[styles.primaryBtnText, currentStatus === 'adopted' && { color: COLORS.textMuted }]}>
-              {currentStatus === 'adopted' ? 'Already Adopted' : `Adopt ${animal.name || 'This Pet'}`}
+              {currentStatus === 'adopted' ? 'Already Adopted' : !animal.isVerified ? 'Awaiting vet verification' : `Adopt ${animal.name || 'This Pet'}`}
             </Text>
           </TouchableOpacity>
         )}

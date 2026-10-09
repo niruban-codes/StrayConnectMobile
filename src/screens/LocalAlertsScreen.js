@@ -1,3 +1,5 @@
+import { useFeedStatus } from '../hooks/useFeedStatus';
+import FeedError from '../components/FeedError';
 // src/screens/LocalAlertsScreen.js
 import React, { useState, useEffect, useRef } from 'react';
 import {
@@ -26,10 +28,12 @@ const COLORS = {
 const HEADER_HEIGHT = 60; 
 
 export default function LocalAlertsScreen({ navigation }) {
-  const insets = useSafeAreaInsets(); 
+  const insets = useSafeAreaInsets();
+  const { error: feedError, fail: failFeed, retry, retryKey } = useFeedStatus();
 
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [missingPets, setMissingPets] = useState([]);
 
   // 🚀 ANIMATION VALUES
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -63,12 +67,13 @@ export default function LocalAlertsScreen({ navigation }) {
     ]).start();
 
     // SOS Pulse Animation
-    Animated.loop(
+    const pulse = Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, { toValue: 1.2, duration: 1000, useNativeDriver: true }),
         Animated.timing(pulseAnim, { toValue: 1, duration: 1000, useNativeDriver: true }),
       ])
-    ).start();
+    );
+    pulse.start();
 
     const q = query(
       collection(db, 'reports'),
@@ -80,10 +85,15 @@ export default function LocalAlertsScreen({ navigation }) {
       fetchedAlerts.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
       setAlerts(fetchedAlerts);
       setLoading(false);
-    });
+    }, error => { setLoading(false); failFeed(error); });
 
-    return () => unsubscribe();
-  }, []);
+    const missing = onSnapshot(query(collection(db, 'animals'), where('status', '==', 'lost')), snapshot => {
+      setMissingPets(snapshot.docs.map(item => ({ ...item.data(), id: item.id })));
+    }, failFeed);
+    return () => { unsubscribe(); missing(); pulse.stop(); };
+  }, [retryKey, failFeed]);
+
+  if (feedError) return <FeedError message={feedError} onRetry={retry} />;
 
   if (loading) {
     return (
@@ -162,11 +172,19 @@ export default function LocalAlertsScreen({ navigation }) {
             </View>
           </View>
 
-          {alerts.length === 0 ? (
+          {missingPets.map(pet => <TouchableOpacity key={`missing-${pet.id}`} style={styles.alertCard}
+            onPress={() => navigation.navigate('Browse', { screen: 'AnimalDetail', params: { animal: pet } })}>
+            <View style={styles.alertContent}>
+              <Text style={styles.animalType}>Missing pet: {pet.name || 'Unnamed pet'}</Text>
+              <Text style={styles.locationText}>{pet.location || 'Location not provided'}</Text>
+              <Text style={styles.respondText}>View pet and report a sighting</Text>
+            </View>
+          </TouchableOpacity>)}
+          {alerts.length === 0 && missingPets.length === 0 ? (
             <View style={styles.emptyState}>
               <MaterialCommunityIcons name="shield-check" size={60} color={COLORS.primary} style={{ opacity: 0.2 }} />
               <Text style={styles.emptyTitle}>All Clear!</Text>
-              <Text style={styles.emptySub}>There are no pending SOS alerts in your area right now.</Text>
+              <Text style={styles.emptySub}>There are no pending rescue reports or missing pets.</Text>
             </View>
           ) : (
             alerts.map(alert => (

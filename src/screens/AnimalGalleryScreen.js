@@ -1,3 +1,5 @@
+import { useFeedStatus } from '../hooks/useFeedStatus';
+import FeedError from '../components/FeedError';
 // src/screens/AnimalGalleryScreen.js
 import React, { useState, useEffect, useRef } from 'react';
 import {
@@ -38,7 +40,8 @@ const statusStyle = (status) => {
 };
 
 export default function AnimalGalleryScreen({ navigation }) {
-  const insets = useSafeAreaInsets(); 
+  const insets = useSafeAreaInsets();
+  const { error: feedError, fail: failFeed, retry, retryKey } = useFeedStatus();
   const [animals, setAnimals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -90,9 +93,9 @@ export default function AnimalGalleryScreen({ navigation }) {
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setAnimals(snapshot.docs.map(d => ({ ...d.data(), id: d.id })));
       setLoading(false);
-    });
+    }, error => { setLoading(false); failFeed(error); });
     return () => unsubscribe();
-  }, []);
+  }, [retryKey, failFeed]);
 
   const filtered = animals.filter(a => {
     const safeName = a.name || '';
@@ -106,7 +109,7 @@ export default function AnimalGalleryScreen({ navigation }) {
       switch (activeFilter) {
         case 'Dogs':      return a.species?.toLowerCase() === 'dog';
         case 'Cats':      return a.species?.toLowerCase() === 'cat';
-        case 'Adoptable': return a.status === 'sheltered' || a.status === 'stray';
+        case 'Adoptable': return a.isVerified && (a.status === 'sheltered' || a.status === 'stray');
         case 'Lost & Found': return a.status === 'stray' || a.status === 'lost'; 
         default:          return true;
       }
@@ -159,6 +162,8 @@ export default function AnimalGalleryScreen({ navigation }) {
       </TouchableOpacity>
     );
   };
+
+  if (feedError) return <FeedError message={feedError} onRetry={retry} />;
 
   return (
     <View style={styles.safe}>

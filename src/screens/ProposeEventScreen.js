@@ -11,6 +11,8 @@ import axios from 'axios';
 import { db, auth } from '../../firebase';
 import { collection, addDoc } from 'firebase/firestore';
 
+import { parseEventDate } from '../utils/eventDate';
+
 // 🎨 "MONITO" COLOR PALETTE
 const COLORS = {
   primary: '#003459',       // Dark Blue
@@ -73,6 +75,10 @@ export default function ProposeEventScreen({ navigation }) {
       return;
     }
 
+    if (submitting) return;
+    let parsedDate;
+    try { parsedDate = parseEventDate(date); }
+    catch (error) { Alert.alert('Check event date', error.message); return; }
     setSubmitting(true);
     try {
       const currentUser = auth.currentUser;
@@ -97,8 +103,7 @@ export default function ProposeEventScreen({ navigation }) {
       }
 
       // 🚀 BUG FIX: Safely try to parse the date.
-      const parsedDate = new Date(date);
-      const safeFirebaseDate = isNaN(parsedDate.getTime()) ? new Date() : parsedDate;
+      // The validated wall time is stored as a canonical timestamp.
 
       // 2. Save Application to Firestore as PENDING
       await addDoc(collection(db, 'events'), {
@@ -106,8 +111,8 @@ export default function ProposeEventScreen({ navigation }) {
         type,
         description,
         location,
-        dateString: date, 
-        date: safeFirebaseDate, 
+        dateString: date.trim(),
+        date: parsedDate,
         imageUrl: uploadedUrl,
         organizer: currentUser.displayName || 'Community Member',
         userId: currentUser.uid,
@@ -195,10 +200,10 @@ export default function ProposeEventScreen({ navigation }) {
             ))}
           </View>
 
-          <Text style={styles.label}>Date & Time *</Text>
+          <Text style={styles.label}>Date & Time (Sri Lanka) *</Text>
           <TextInput 
             style={styles.input} 
-            placeholder="e.g. October 20th at 10:00 AM" 
+            placeholder="YYYY-MM-DD HH:mm (24-hour time)"
             placeholderTextColor={COLORS.textMuted}
             value={date} 
             onChangeText={setDate} 

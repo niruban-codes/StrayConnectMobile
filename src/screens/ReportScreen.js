@@ -8,6 +8,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'; 
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { refreshVerifiedUser } from '../services/emailVerification';
 import { db, auth } from '../../firebase';
 import { collection, addDoc } from 'firebase/firestore';
 import axios from 'axios';
@@ -145,7 +146,9 @@ export default function ReportScreen({ navigation }) {
   };
 
   const handleSubmit = async () => {
-    const currentUser = auth.currentUser;
+    let currentUser;
+    try { currentUser = await refreshVerifiedUser(); }
+    catch { Alert.alert('Unable to check verification', 'Check your connection and try again.'); return; }
     if (!currentUser || !currentUser.emailVerified) {
       Alert.alert(
         'Verification Required', 

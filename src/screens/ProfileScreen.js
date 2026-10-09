@@ -1,3 +1,5 @@
+import { useFeedStatus } from '../hooks/useFeedStatus';
+import FeedError from '../components/FeedError';
 // src/screens/ProfileScreen.js
 import React, { useState, useEffect, useRef } from 'react';
 import { 
@@ -10,7 +12,8 @@ import { sendEmailVerification } from 'firebase/auth';
 import { db, auth } from '../../firebase';
 import { collection, query, onSnapshot, where, doc, runTransaction, or } from 'firebase/firestore';
 
-import { changePetStatus } from '../utils/petStatus';
+import { useVerifiedEmail } from '../hooks/useVerifiedEmail';
+import { setPetMissing } from '../utils/missingPet';
 
 // 🎨 "MONITO" COLOR PALETTE
 const COLORS = {
@@ -40,16 +43,18 @@ const statusStyle = (status) => {
 };
 
 export default function ProfileScreen({ navigation }) {
-  const insets = useSafeAreaInsets(); 
+  const insets = useSafeAreaInsets();
+  const { error: feedError, fail: failFeed, retry, retryKey } = useFeedStatus();
 
   const [reports, setReports] = useState([]);
+  const [applications, setApplications] = useState([]);
   const [animalCount, setAnimalCount] = useState(0);
   
   const [userPets, setUserPets] = useState([]);
   const [loadingPets, setLoadingPets] = useState(true);
   
   const user = auth.currentUser;
-  const isVerified = user?.emailVerified;
+  const [isVerified, refreshVerification] = useVerifiedEmail();
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
@@ -91,26 +96,31 @@ export default function ProfileScreen({ navigation }) {
       const fetchedReports = snap.docs.map(d => ({ ...d.data(), id: d.id }));
       fetchedReports.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
       setReports(fetchedReports);
-    });
+    }, failFeed);
 
     const animalsQuery = query(collection(db, 'animals'));
     const unsubAnimals = onSnapshot(animalsQuery, (snap) => {
       setAnimalCount(snap.size);
-    });
+    }, failFeed);
 
     const petsQuery = query(collection(db, 'animals'), where('ownerId', '==', user.uid));
     const unsubPets = onSnapshot(petsQuery, (snap) => {
       setUserPets(snap.docs.map(d => ({ ...d.data(), id: d.id })));
       setLoadingPets(false);
-    });
+    }, error => { setLoadingPets(false); failFeed(error); });
 
-    return () => { unsubReports(); unsubAnimals(); unsubPets(); };
-  }, [user]);
+    const unsubApplications = onSnapshot(query(collection(db, 'adoptionRequests'), where('userId', '==', user.uid)), snapshot => {
+      const items = snapshot.docs.map(item => ({ ...item.data(), id: item.id }));
+      items.sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
+      setApplications(items);
+    }, failFeed);
+    return () => { unsubReports(); unsubAnimals(); unsubPets(); unsubApplications(); };
+  }, [user, retryKey, failFeed]);
 
   const handleReportMissing = (pet) => {
     Alert.alert(
       "Report Missing Pet",
-      `Are you sure you want to mark ${pet.name} as missing? This will immediately alert the community and push their profile to the public SOS feed.`,
+      `Are you sure you want to mark ${pet.name} as missing? Their profile will appear in the public SOS feed so people can report sightings.`,
       [
         { text: "Cancel", style: "cancel" },
         { 
@@ -119,10 +129,7 @@ export default function ProfileScreen({ navigation }) {
           onPress: async () => {
             try {
               const petRef = doc(db, 'animals', pet.id);
-              await runTransaction(db, tx => changePetStatus(tx, petRef, auth.currentUser?.uid, pet.status, {
-                status: 'lost',
-                reportedLostAt: new Date() 
-              }));
+              await runTransaction(db, tx => setPetMissing(tx, petRef, auth.currentUser?.uid, true, new Date()));
               Alert.alert("SOS Sent 🚨", `${pet.name} is now on the community missing feed.`);
             } catch (error) {
               Alert.alert("Error", "Failed to send SOS. Please try again.");
@@ -145,10 +152,7 @@ export default function ProfileScreen({ navigation }) {
           onPress: async () => {
             try {
               const petRef = doc(db, 'animals', pet.id);
-              await runTransaction(db, tx => changePetStatus(tx, petRef, auth.currentUser?.uid, pet.status, {
-                status: 'owned',
-                reportedLostAt: null 
-              }));
+              await runTransaction(db, tx => setPetMissing(tx, petRef, auth.currentUser?.uid, false, new Date()));
               Alert.alert("Welcome Home 🎉", `${pet.name} has been removed from the missing list.`);
             } catch (error) {
               Alert.alert("Error", "Failed to update status.");
@@ -167,6 +171,8 @@ export default function ProfileScreen({ navigation }) {
       Alert.alert('Wait a moment', 'Please wait a bit before requesting another email.');
     }
   };
+
+  if (feedError) return <FeedError message={feedError} onRetry={retry} />;
 
   return (
     <View style={styles.safe}>
@@ -238,6 +244,10 @@ export default function ProfileScreen({ navigation }) {
             <Text style={styles.userName}>{user?.displayName || 'Community Member'}</Text>
             <Text style={styles.userEmail}>{user?.email || 'No email'}</Text>
 
+            {!isVerified && <TouchableOpacity style={styles.unverifiedBadge} onPress={async () => {
+              try { Alert.alert('Email verification', await refreshVerification() ? 'Your email is verified. You can now report and apply to adopt.' : 'Your email is still unverified. Open the link in your email, then try again.'); }
+              catch { Alert.alert('Unable to check', 'Check your connection and try again.'); }
+            }}><Text style={styles.unverifiedText}>I have verified my email — check again</Text></TouchableOpacity>}
             {!isVerified && (
               <TouchableOpacity onPress={handleResendVerification} style={styles.unverifiedBadge}>
                 <MaterialCommunityIcons name="alert-circle" size={14} color={COLORS.pinkRed} />
@@ -349,6 +359,13 @@ export default function ProfileScreen({ navigation }) {
             ))
           )}
 
+          <Text style={[styles.sectionTitle, { marginTop: 24 }]}>My adoption applications</Text>
+          {!applications.length && <Text>No adoption applications yet.</Text>}
+          {applications.map(application => <View key={application.id} style={{ padding: 16, backgroundColor: '#fff', borderRadius: 16, marginBottom: 10 }}>
+            <Text style={{ fontWeight: '700', color: COLORS.primary }}>{application.animalName || 'Pet adoption'}</Text>
+            <Text style={{ textTransform: 'capitalize', marginTop: 4 }}>{application.status}</Text>
+            {!!application.closeReason && <Text>{application.closeReason}</Text>}
+          </View>)}
           <Text style={[styles.sectionTitle, { marginTop: 24 }]}>My Reports & Tasks</Text>
           {reports.length === 0 ? (
             <View style={styles.emptyState}>
