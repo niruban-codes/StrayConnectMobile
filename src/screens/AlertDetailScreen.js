@@ -1,10 +1,13 @@
+import ReportMapAction from '../components/ReportMapAction';
+import PhotoPreview from '../components/PhotoPreview';
+import { COLORS as ARCADE_COLORS, palette } from '../design/theme';
 // src/screens/AlertDetailScreen.js
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
   StyleSheet, StatusBar, Image, Dimensions, Alert, ActivityIndicator, Animated
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context'; 
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import axios from 'axios';
@@ -15,34 +18,19 @@ import { transitionRescue } from '../utils/rescueTransition';
 
 const { width } = Dimensions.get('window');
 
-// 🎨 "MONITO" COLOR PALETTE
-const COLORS = {
-  primary: '#003459',       // Dark Blue
-  secondary: '#F7DBA7',     // Mon Yellow
-  background: '#FDFDFD',    // Neutral 00
-  surface: '#FFFFFF',       // Pure White
-  border: '#EBEEEF',        // Neutral 10
-  textDark: '#00171F',      // Neutral 100
-  textMuted: '#667479',     // Neutral 60
-  
-  // State Colors
-  pinkRed: '#FF564F',
-  greenLight: '#34C759',
-  orangeShine: '#FF912C',
-  blueSea: '#00A7E7',
-};
+const COLORS = { ...ARCADE_COLORS, background: palette.yellow };
 
 export default function AlertDetailScreen({ route, navigation }) {
-  const insets = useSafeAreaInsets(); 
+  const insets = useSafeAreaInsets();
   const { alertItem: initialAlert } = route.params;
-  
+
   const [alertItem, setAlertItem] = useState(initialAlert);
   const [submitting, setSubmitting] = useState(false);
 
   // 🚀 ANIMATION VALUES
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
-  
+
   useEffect(() => {
     // 🚀 ENTRANCE ANIMATION
     Animated.parallel([
@@ -58,9 +46,9 @@ export default function AlertDetailScreen({ route, navigation }) {
     return () => unsub();
   }, [initialAlert.id]);
 
-  const photos = alertItem.photoUrls && alertItem.photoUrls.length > 0 
-    ? alertItem.photoUrls 
-    : [alertItem.imageUrl];
+  const photos = alertItem.photoUrls && alertItem.photoUrls.length > 0
+    ? alertItem.photoUrls
+    : [alertItem.imageUrl].filter(Boolean);
 
   const currentUser = auth.currentUser;
 
@@ -75,8 +63,8 @@ export default function AlertDetailScreen({ route, navigation }) {
       `Are you confirming you can head to ${alertItem.location} right now? \n\nWe will alert the sanctuary that you are handling this.`,
       [
         { text: "Cancel", style: "cancel" },
-        { 
-          text: "I'm on my way!", 
+        {
+          text: "I'm on my way!",
           style: "default",
           onPress: async () => {
             setSubmitting(true);
@@ -103,7 +91,7 @@ export default function AlertDetailScreen({ route, navigation }) {
       }
 
       const result = await ImagePicker.launchCameraAsync({ quality: 0.7 });
-      
+
       if (!result.canceled) {
         setSubmitting(true);
         const imageUri = result.assets[0].uri;
@@ -111,7 +99,7 @@ export default function AlertDetailScreen({ route, navigation }) {
         const formData = new FormData();
         formData.append('file', { uri: imageUri, type: 'image/jpeg', name: 'proof.jpg' });
         formData.append('upload_preset', 'strayconnect_uploads');
-        
+
         const res = await axios.post(
           `https://api.cloudinary.com/v1_1/dorhbk11x/image/upload`,
           formData,
@@ -187,11 +175,7 @@ export default function AlertDetailScreen({ route, navigation }) {
     <View style={[styles.safe, { paddingTop: insets.top }]}>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent={true} />
 
-      {/* 🚀 CUSTOM TOPOGRAPHIC BACKGROUND */}
-      <Image 
-        source={require('../../assets/images/app-bg.png')} 
-        style={styles.bgPattern} 
-      />
+
 
       {/* 🌟 PREMIUM HEADER */}
       <View style={styles.header}>
@@ -204,12 +188,12 @@ export default function AlertDetailScreen({ route, navigation }) {
 
       <Animated.View style={{ flex: 1, opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
-          
+
           {/* 🌟 EDGE-TO-EDGE HERO SLIDER */}
           <View style={styles.sliderContainer}>
             <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}>
               {photos.map((url, index) => (
-                <Image key={index} source={{ uri: url }} style={styles.sliderImage} />
+                <PhotoPreview key={index} uri={url} photos={photos} initialIndex={index} style={styles.sliderImage} />
               ))}
             </ScrollView>
             {photos.length > 1 && (
@@ -225,15 +209,15 @@ export default function AlertDetailScreen({ route, navigation }) {
             <View style={styles.metaRow}>
               <View style={styles.typeBadge}>
                 <MaterialCommunityIcons name="alert-octagon" size={14} color="#fff" />
-                <Text style={styles.typeBadgeText}>{alertItem.incidentType}</Text>
+                <Text style={styles.typeBadgeText}>{alertItem.incidentType === 'Other' ? alertItem.incidentDetails || 'Other' : alertItem.incidentType}</Text>
               </View>
               <Text style={styles.timeText}>
                 {alertItem.createdAt?.toDate ? alertItem.createdAt.toDate().toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Recently'}
               </Text>
             </View>
 
-            <Text style={styles.title}>{alertItem.animalType} in Danger</Text>
-            
+            <Text style={styles.title}>{alertItem.animalType === 'Other' ? alertItem.animalDetails || 'Other animal' : alertItem.animalType} in Danger</Text>
+
             {/* 🌟 MONITO STYLE INFO CARD */}
             <View style={styles.infoBox}>
               <View style={styles.infoIconBg}>
@@ -245,6 +229,7 @@ export default function AlertDetailScreen({ route, navigation }) {
               </View>
             </View>
 
+            <ReportMapAction report={alertItem} />
             <Text style={styles.sectionTitle}>Description</Text>
             <Text style={styles.description}>{alertItem.description}</Text>
 
@@ -261,56 +246,48 @@ export default function AlertDetailScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: COLORS.secondary }, 
-  
+  safe: { flex: 1, backgroundColor: COLORS.secondary },
+
   // 🚀 Background Pattern
-  bgPattern: {
-    position: 'absolute',
-    width: '100%',
-    height: '100%',
-    opacity: 0.15,
-    resizeMode: 'cover',
-  },
 
   // Header
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12, backgroundColor: COLORS.secondary },
-  backBtn: { padding: 8, backgroundColor: COLORS.surface, borderRadius: 12, borderWidth: 1, borderColor: COLORS.border },
-  headerTitle: { fontFamily: 'Poppins_900Black', fontSize: 18, color: COLORS.primary, letterSpacing: -0.5 },
-  
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12, backgroundColor: COLORS.secondary, borderBottomWidth: 3, borderBottomColor: palette.ink },
+  backBtn: { padding: 8, backgroundColor: COLORS.surface, borderRadius: 0, borderWidth: 3, borderColor: palette.ink },
+  headerTitle: { fontFamily: "Silkscreen_700Bold", fontSize: 16, color: COLORS.primary, letterSpacing: 0 },
+
   // Image Slider
-  sliderContainer: { position: 'relative', width: width, height: width * 0.9, backgroundColor: COLORS.border, borderBottomLeftRadius: 32, borderBottomRightRadius: 32, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 4 },
+  sliderContainer: { position: 'relative', width: width, height: width * 0.9, backgroundColor: COLORS.border, borderBottomLeftRadius: 0, borderBottomRightRadius: 0, overflow: 'hidden', borderWidth: 3, borderColor: palette.ink, boxShadow: "4px 4px 0px 0px #111111" },
   sliderImage: { width: width, height: '100%', resizeMode: 'cover' },
-  sliderBadge: { position: 'absolute', bottom: 16, right: 16, backgroundColor: 'rgba(0,34,50,0.7)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, flexDirection: 'row', alignItems: 'center', gap: 6 },
-  sliderBadgeText: { fontFamily: 'Urbanist_800ExtraBold', color: '#fff', fontSize: 12 },
-  
+  sliderBadge: { position: 'absolute', bottom: 16, right: 16, backgroundColor: 'rgba(0,34,50,0.7)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 0, flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 3, borderColor: palette.ink },
+  sliderBadgeText: { fontFamily: "Poppins_700Bold", color: '#fff', fontSize: 12 },
+
   // Content Layout
   content: { padding: 24, paddingTop: 32 },
   metaRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  typeBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: COLORS.pinkRed, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999 },
-  typeBadgeText: { fontFamily: 'Urbanist_800ExtraBold', color: '#fff', fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5 },
-  timeText: { fontFamily: 'Urbanist_600SemiBold', fontSize: 13, color: COLORS.textMuted },
-  
-  title: { fontFamily: 'Poppins_900Black', fontSize: 32, color: COLORS.primary, marginBottom: 24, letterSpacing: -1, lineHeight: 36 },
-  
-  // Monito Style Info Box
-  infoBox: { flexDirection: 'row', alignItems: 'center', gap: 16, backgroundColor: COLORS.surface, padding: 16, borderRadius: 20, marginBottom: 32, borderWidth: 1, borderColor: COLORS.border, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.03, shadowRadius: 8, elevation: 2 },
-  infoIconBg: { width: 48, height: 48, borderRadius: 14, backgroundColor: '#FFF3E0', alignItems: 'center', justifyContent: 'center' },
-  infoLabel: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 11, color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 },
-  infoValue: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 16, color: COLORS.textDark, letterSpacing: -0.3 },
-  
-  sectionTitle: { fontFamily: 'Poppins_900Black', fontSize: 18, color: COLORS.primary, marginBottom: 12, letterSpacing: -0.5 },
-  description: { fontFamily: 'Urbanist_500Medium', fontSize: 15, color: COLORS.textMuted, lineHeight: 24 },
-  
+  typeBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: COLORS.pinkRed, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 0, borderWidth: 3, borderColor: palette.ink },
+  typeBadgeText: { fontFamily: "Poppins_700Bold", color: '#fff', fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5 },
+  timeText: { fontFamily: "Poppins_700Bold", fontSize: 13, color: COLORS.textMuted },
+
+  title: { fontFamily: "Silkscreen_700Bold", fontSize: 26, color: COLORS.primary, marginBottom: 24, letterSpacing: 0, lineHeight: 36 },
+
+  infoBox: { flexDirection: 'row', alignItems: 'center', gap: 16, backgroundColor: COLORS.surface, padding: 16, borderRadius: 0, marginBottom: 32, borderWidth: 3, borderColor: palette.ink, boxShadow: "4px 4px 0px 0px #111111" },
+  infoIconBg: { width: 48, height: 48, borderRadius: 0, backgroundColor: '#FFF3E0', alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: palette.ink },
+  infoLabel: { fontFamily: "Poppins_700Bold", fontSize: 11, color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 },
+  infoValue: { fontFamily: "Poppins_700Bold", fontSize: 16, color: COLORS.textDark, letterSpacing: -0.3 },
+
+  sectionTitle: { fontFamily: "Silkscreen_700Bold", fontSize: 16, color: COLORS.primary, marginBottom: 12, letterSpacing: 0 },
+  description: { fontFamily: "Poppins_400Regular", fontSize: 15, color: COLORS.textMuted, lineHeight: 24 },
+
   // Bottom Action Bar (Reduced Height)
-  bottomBar: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 24, paddingTop: 16, backgroundColor: COLORS.surface, borderTopWidth: 1, borderTopColor: COLORS.border, shadowColor: '#000', shadowOffset: { width: 0, height: -10 }, shadowOpacity: 0.04, shadowRadius: 20, elevation: 10 },
-  
+  bottomBar: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 24, paddingTop: 16, backgroundColor: COLORS.surface, borderTopWidth: 3, borderTopColor: palette.ink, borderWidth: 3, borderColor: palette.ink, boxShadow: "4px 4px 0px 0px #111111" },
+
   // Buttons
-  btn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 16, borderRadius: 999, gap: 8 },
-  btnText: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 15, color: '#fff', letterSpacing: 0.3 },
-  
-  dangerBtn: { backgroundColor: COLORS.pinkRed, shadowColor: COLORS.pinkRed, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 5 },
-  primaryBtn: { backgroundColor: COLORS.primary, shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.2, shadowRadius: 12, elevation: 5 },
-  
+  btn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 16, borderRadius: 0, gap: 8 },
+  btnText: { fontFamily: "Poppins_700Bold", fontSize: 15, color: '#fff', letterSpacing: 0.3 },
+
+  dangerBtn: { backgroundColor: COLORS.pinkRed, borderWidth: 3, borderColor: palette.ink, boxShadow: "4px 4px 0px 0px #111111" },
+  primaryBtn: { backgroundColor: COLORS.primary, borderWidth: 3, borderColor: palette.ink, boxShadow: "4px 4px 0px 0px #111111" },
+
   // Status Indicator Buttons
   disabledBtn: { backgroundColor: COLORS.border },
   reviewingBtn: { backgroundColor: '#E1F5FE' },

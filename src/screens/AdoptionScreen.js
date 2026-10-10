@@ -1,29 +1,16 @@
+import { COLORS as ARCADE_COLORS, palette } from '../design/theme';
 // src/screens/AdoptionScreen.js
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  StyleSheet, Text, View, FlatList, Image, ActivityIndicator, 
-  TouchableOpacity, StatusBar, Animated 
+import {
+  StyleSheet, Text, View, FlatList, Image, ActivityIndicator,
+  TouchableOpacity, StatusBar, Animated
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { db } from '../../firebase'; 
+import { db } from '../../firebase';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
 
-// 🎨 "MONITO" COLOR PALETTE
-const COLORS = {
-  primary: '#003459',       // Dark Blue
-  secondary: '#F7DBA7',     // Mon Yellow
-  background: '#F7DBA7',    // Match to Mon Yellow for the safe area
-  surface: '#FFFFFF',       // Pure White
-  border: '#EBEEEF',        // Neutral 10
-  textDark: '#00171F',      // Neutral 100
-  textMuted: '#667479',     // Neutral 60
-  
-  pinkRed: '#FF564F',
-  greenLight: '#34C759',
-  orangeShine: '#FF912C',
-  blueSea: '#00A7E7',
-};
+const COLORS = { ...ARCADE_COLORS, background: palette.mint };
 
 const statusStyle = (status) => {
   switch (status) {
@@ -51,7 +38,7 @@ export default function AdoptionScreen({ navigation }) {
     ]).start();
 
     const q = query(
-      collection(db, 'animals'), 
+      collection(db, 'animals'),
       where('status', 'in', ['stray', 'sheltered'])
     );
 
@@ -69,10 +56,10 @@ export default function AdoptionScreen({ navigation }) {
 
   const renderAnimal = ({ item }) => {
     const sc = statusStyle(item.status);
-    
+
     return (
-      <TouchableOpacity 
-        style={styles.card} 
+      <TouchableOpacity
+        style={styles.card}
         activeOpacity={0.8}
         onPress={() => navigation.navigate('AnimalDetails', { animal: item })}
       >
@@ -92,7 +79,7 @@ export default function AdoptionScreen({ navigation }) {
             <MaterialCommunityIcons name="tag-outline" size={14} color={COLORS.textMuted} />
             <Text style={styles.animalSpecies}>{item.species}</Text>
           </View>
-          
+
           <View style={[styles.statusBadge, { backgroundColor: sc.bg }]}>
             <Text style={[styles.statusText, { color: sc.text }]}>{sc.label}</Text>
           </View>
@@ -109,13 +96,9 @@ export default function AdoptionScreen({ navigation }) {
     // 🚀 INJECT INSETS HERE TO FIX THE WHITE BAR GLITCH
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent={true} />
-      
-      {/* 🚀 CUSTOM TOPOGRAPHIC BACKGROUND */}
-      <Image 
-        source={require('../../assets/images/app-bg.png')} 
-        style={styles.bgPattern} 
-      />
-      
+
+
+
       {/* 🌟 PREMIUM HEADER */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
@@ -156,174 +139,43 @@ export default function AdoptionScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background, // Applies yellow to the safe area!
-  },
-  
+  container: { flex: 1, backgroundColor: COLORS.background },
+
   // 🚀 Background Pattern
-  bgPattern: {
-    position: 'absolute',
-    width: '100%',
-    height: '100%',
-    opacity: 0.15,
-    resizeMode: 'cover',
-  },
-  
+
   // Header
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 10,
-  },
-  backBtn: {
-    padding: 8,
-    backgroundColor: 'rgba(255,255,255,0.6)', // Slight transparency for the textured bg
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  headerTitle: {
-    fontFamily: 'Poppins_900Black', // 🚀 Font Update
-    fontSize: 18,
-    color: COLORS.primary,
-    letterSpacing: -0.5,
-  },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 10 },
+  backBtn: { padding: 8, backgroundColor: palette.paper, borderRadius: 0, borderWidth: 3, borderColor: palette.ink },
+  headerTitle: { fontFamily: "Silkscreen_700Bold", fontSize: 16, color: COLORS.primary, letterSpacing: 0 },
 
   // Page Titles
-  pageTitleContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 20,
-  },
-  pageTitle: {
-    fontFamily: 'Poppins_900Black', // 🚀 Font Update
-    fontSize: 32,
-    color: COLORS.primary,
-    letterSpacing: -1,
-  },
-  pageSubtitle: {
-    fontFamily: 'Urbanist_600SemiBold', // 🚀 Font Update
-    fontSize: 14,
-    color: COLORS.textMuted,
-    marginTop: 4,
-  },
+  pageTitleContainer: { paddingHorizontal: 20, paddingTop: 10, paddingBottom: 20 },
+  pageTitle: { fontFamily: "Silkscreen_700Bold", fontSize: 26, color: COLORS.primary, letterSpacing: 0 },
+  pageSubtitle: { fontFamily: "Poppins_700Bold", fontSize: 14, color: COLORS.textMuted, marginTop: 4 },
 
   // List content
-  listContent: {
-    paddingHorizontal: 20,
-    gap: 16,
-  },
+  listContent: { paddingHorizontal: 20, gap: 16 },
 
-  // Monito Style Row Card
-  card: {
-    flexDirection: 'row',
-    backgroundColor: COLORS.surface,
-    borderRadius: 24,
-    padding: 12,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.03,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  imageContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 16,
-    overflow: 'hidden',
-  },
-  animalImage: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
-  },
-  imagePlaceholder: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: COLORS.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  
+  card: { flexDirection: 'row', backgroundColor: COLORS.surface, borderRadius: 0, padding: 12, alignItems: 'center', borderWidth: 3, borderColor: palette.ink, boxShadow: "4px 4px 0px 0px #111111" },
+  imageContainer: { width: 80, height: 80, borderRadius: 0, overflow: 'hidden' },
+  animalImage: { width: '100%', height: '100%', resizeMode: 'cover' },
+  imagePlaceholder: { width: '100%', height: '100%', backgroundColor: COLORS.border, alignItems: 'center', justifyContent: 'center' },
+
   // Card Text
-  animalInfo: {
-    flex: 1,
-    marginLeft: 16,
-    justifyContent: 'center',
-  },
-  animalName: {
-    fontFamily: 'Urbanist_800ExtraBold', // 🚀 Font Update
-    fontSize: 17,
-    color: COLORS.primary,
-    marginBottom: 4,
-    letterSpacing: -0.3,
-  },
-  metaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginBottom: 8,
-  },
-  animalSpecies: {
-    fontFamily: 'Urbanist_600SemiBold', // 🚀 Font Update
-    fontSize: 13,
-    color: COLORS.textMuted,
-    textTransform: 'capitalize',
-  },
-  
-  // Badges
-  statusBadge: {
-    alignSelf: 'flex-start',
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  statusText: {
-    fontFamily: 'Urbanist_800ExtraBold', // 🚀 Font Update
-    fontSize: 10,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
+  animalInfo: { flex: 1, marginLeft: 16, justifyContent: 'center' },
+  animalName: { fontFamily: "Poppins_700Bold", fontSize: 17, color: COLORS.primary, marginBottom: 4, letterSpacing: -0.3 },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 8 },
+  animalSpecies: { fontFamily: "Poppins_700Bold", fontSize: 13, color: COLORS.textMuted, textTransform: 'capitalize' },
 
-  actionArrow: {
-    padding: 8,
-  },
+  // Badges
+  statusBadge: { alignSelf: 'flex-start', borderRadius: 0, paddingHorizontal: 10, paddingVertical: 4 },
+  statusText: { fontFamily: "Poppins_700Bold", fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.5 },
+
+  actionArrow: { padding: 8 },
 
   // States
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 60,
-    marginHorizontal: 20,
-    backgroundColor: 'rgba(255,255,255,0.4)', // Slightly transparent to show bg texture
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.7)',
-  },
-  emptyTitle: {
-    fontFamily: 'Poppins_900Black', // 🚀 Font Update
-    fontSize: 18,
-    color: COLORS.primary,
-    marginTop: 16,
-  },
-  emptySubtitle: {
-    fontFamily: 'Urbanist_600SemiBold', // 🚀 Font Update
-    fontSize: 13,
-    color: COLORS.textMuted,
-    textAlign: 'center',
-    marginTop: 8,
-    paddingHorizontal: 20,
-  },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  emptyState: { alignItems: 'center', justifyContent: 'center', paddingVertical: 60, marginHorizontal: 20, backgroundColor: palette.paper, borderRadius: 0, borderWidth: 3, borderColor: palette.ink },
+  emptyTitle: { fontFamily: "Silkscreen_700Bold", fontSize: 16, color: COLORS.primary, marginTop: 16, letterSpacing: 0 },
+  emptySubtitle: { fontFamily: "Poppins_700Bold", fontSize: 13, color: COLORS.textMuted, textAlign: 'center', marginTop: 8, paddingHorizontal: 20 },
 });

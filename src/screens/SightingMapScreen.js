@@ -1,3 +1,5 @@
+import { COLORS as ARCADE_COLORS, palette } from '../design/theme';
+import PixelPaw from '../components/PixelPaw';
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, Keyboard,
   PermissionsAndroid, Platform, TextInput, KeyboardAvoidingView } from 'react-native';
@@ -10,10 +12,11 @@ import { auth, db } from '../../firebase';
 import { DEFAULT_SIGHTING_REGION, validCoordinate, placeCoordinate, saveSighting } from '../utils/sighting';
 
 const SEARCH_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY;
-const COLORS = { primary: '#003459', accent: '#FF564F', muted: '#52616B', surface: '#FFFFFF' };
+const COLORS = { ...ARCADE_COLORS, background: palette.yellow };
 
-export default function SightingMapScreen({ route, navigation }) {
+export default function SightingMapScreen({ route, navigation, onPick }) {
   const animal = route.params?.animal;
+  const picking = Boolean(onPick);
   const insets = useSafeAreaInsets();
   const map = useRef(null);
   const mounted = useRef(true);
@@ -22,8 +25,8 @@ export default function SightingMapScreen({ route, navigation }) {
   const submitLock = useRef(false);
   const pendingSubmission = useRef(null);
   const search = useRef(null);
-  const [point, setPoint] = useState(null);
-  const [label, setLabel] = useState('');
+  const [point, setPoint] = useState(route.params?.point || null);
+  const [label, setLabel] = useState(route.params?.point?.locationLabel || '');
   const [notes, setNotes] = useState('');
   const [showNotes, setShowNotes] = useState(false);
   const [message, setMessage] = useState('');
@@ -86,6 +89,10 @@ export default function SightingMapScreen({ route, navigation }) {
   };
 
   const submit = async () => {
+    if (picking) {
+      if (validCoordinate(point)) onPick({ ...point, locationLabel: label });
+      return;
+    }
     if (submitLock.current || !validCoordinate(point) || !animal?.id) return;
     submitLock.current = true;
     setSubmitting(true);
@@ -117,7 +124,7 @@ export default function SightingMapScreen({ route, navigation }) {
     }
   };
 
-  if (!animal?.id) return (
+  if (!picking && !animal?.id) return (
     <View style={[styles.empty, { paddingTop: insets.top }]}>
       <Text style={styles.title}>Pet unavailable</Text>
       <Text>Open the pet’s passport again to report a sighting.</Text>
@@ -131,10 +138,10 @@ export default function SightingMapScreen({ route, navigation }) {
         <TouchableOpacity accessibilityLabel="Go back" onPress={() => navigation.goBack()} style={styles.iconButton}>
           <MaterialCommunityIcons name="arrow-left" size={25} color={COLORS.primary} />
         </TouchableOpacity>
-        <View style={{ flex: 1 }}><Text style={styles.title}>Mark a sighting</Text><Text style={styles.subtitle}>{animal.name || 'Missing pet'} · Help them get home</Text></View>
+        <View style={{ flex: 1 }}><Text style={styles.title}>{picking ? 'Mark SOS location' : 'Mark a sighting'}</Text><Text style={styles.subtitle}>{picking ? 'Tap the map, then confirm the pin' : `${animal.name || 'Missing pet'} · Help them get home`}</Text></View>
       </View>
       <View style={styles.mapArea}>
-        <MapView ref={map} style={StyleSheet.absoluteFillObject} initialRegion={DEFAULT_SIGHTING_REGION}
+        <MapView ref={map} style={StyleSheet.absoluteFillObject} initialRegion={route.params?.point ? { ...route.params.point, latitudeDelta: 0.008, longitudeDelta: 0.008 } : DEFAULT_SIGHTING_REGION}
           onMapReady={() => setReady(true)} showsUserLocation={locationAllowed} showsMyLocationButton={false}
           toolbarEnabled={false} moveOnMarkerPress={false} showsCompass rotateEnabled={false}
           onPress={event => { if (event.nativeEvent.action !== 'marker-press') selectPoint(event.nativeEvent.coordinate); }}
@@ -145,9 +152,11 @@ export default function SightingMapScreen({ route, navigation }) {
             if (validCoordinate(coordinate)) selectPoint(coordinate, 'Near your current position — adjust the pin if needed', true);
           }}>
           {point && <Marker coordinate={point} draggable={!locked} tracksViewChanges={false}
-            pinColor={COLORS.accent} title="Sighting location" description="Hold and drag to adjust"
+            pinColor={COLORS.accent} title="Selected location" description="Hold and drag to adjust"
             onDragStart={() => { waitingForLocation.current = false; clearTimeout(locationTimer.current); setLocating(false); }}
-            onDragEnd={event => selectPoint(event.nativeEvent.coordinate)} />}
+            onDragEnd={event => selectPoint(event.nativeEvent.coordinate)}>
+            <View style={{ padding: 7, backgroundColor: palette.yellow, borderWidth: 3, borderColor: palette.ink }}><PixelPaw size={24} /></View>
+          </Marker>}
         </MapView>
         <View style={styles.searchOverlay} pointerEvents={locked ? 'none' : 'auto'}>
           {SEARCH_KEY ? <GooglePlacesAutocomplete ref={search} placeholder="Search a place in Sri Lanka"
@@ -162,10 +171,10 @@ export default function SightingMapScreen({ route, navigation }) {
             onFail={() => setMessage('Place search is unavailable. You can still tap the map to place a pin.')}
             onTimeout={() => setMessage('Search timed out. Try again or choose the spot on the map.')}
             onNotFound={() => setMessage('No location details found. Try a nearby landmark or tap the map.')}
-            textInputProps={{ editable: !locked, accessibilityLabel: 'Search for sighting location', returnKeyType: 'search' }}
+            textInputProps={{ editable: !locked, accessibilityLabel: picking ? 'Search for SOS location' : 'Search for sighting location', returnKeyType: 'search' }}
             styles={{ container: { flex: 0 }, textInput: styles.searchInput,
               listView: styles.results, description: { color: COLORS.primary } }}
-          /> : <Text style={styles.hint}>Tap the map to choose the sighting location.</Text>}
+          /> : <Text style={styles.hint}>Tap the map to choose the location.</Text>}
         </View>
         {!ready && <View pointerEvents="none" style={styles.loading}><ActivityIndicator color={COLORS.primary} />
           <Text style={styles.subtitle}>{mapSlow ? 'Map is taking longer than expected. Check your connection.' : 'Loading map…'}</Text></View>}
@@ -175,17 +184,17 @@ export default function SightingMapScreen({ route, navigation }) {
         </TouchableOpacity>
       </View>
       <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 12) }]}>
-        <Text style={styles.sectionTitle}>{point ? 'Confirm the spot' : 'Where did you see them?'}</Text>
+        <Text style={styles.sectionTitle}>{point ? 'Confirm the spot' : 'Where is the animal?'}</Text>
         <Text style={styles.subtitle} numberOfLines={2}>{point
           ? label || 'Pin selected. Hold and drag it to refine the location.'
           : 'Search, tap the map, or use your location. Nothing is shared until you confirm.'}</Text>
         {point && <Text style={styles.coordinates}>{point.latitude.toFixed(5)}, {point.longitude.toFixed(5)}</Text>}
-        <TouchableOpacity accessibilityRole="button" accessibilityState={{ expanded: showNotes }}
+        {!picking && <TouchableOpacity accessibilityRole="button" accessibilityState={{ expanded: showNotes }}
           disabled={locked} style={styles.notesToggle} onPress={() => setShowNotes(value => !value)}>
           <MaterialCommunityIcons name="note-text-outline" size={18} color={COLORS.primary} />
           <Text style={styles.notesLabel}>{showNotes ? 'Sighting details (optional)' : notes ? 'Edit sighting details' : 'Add sighting details (optional)'}</Text>
           <MaterialCommunityIcons name={showNotes ? 'chevron-up' : 'chevron-down'} size={18} color={COLORS.primary} />
-        </TouchableOpacity>
+        </TouchableOpacity>}
         {showNotes && <View style={styles.notesPanel}>
           <Text style={styles.subtitle}>Tell the owner what you saw, or describe a nearby landmark.</Text>
           <TextInput style={styles.notes} placeholder="For example: beside the school gate, wearing a red collar" value={notes}
@@ -197,7 +206,7 @@ export default function SightingMapScreen({ route, navigation }) {
         <TouchableOpacity accessibilityRole="button" style={[styles.submit, (!point || submitting) && styles.disabled]}
           disabled={!point || submitting} onPress={submit}>
           {submitting ? <ActivityIndicator color="#fff" /> : <MaterialCommunityIcons name="map-marker-check" color="#fff" size={22} />}
-          <Text style={styles.submitText}>{submitting ? 'Sharing sighting…' : retryPending ? 'Retry this sighting' : 'Share sighting location'}</Text>
+          <Text style={styles.submitText}>{picking ? 'Use this SOS location' : submitting ? 'Sharing sighting…' : retryPending ? 'Retry this sighting' : 'Share sighting location'}</Text>
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
@@ -205,29 +214,29 @@ export default function SightingMapScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#F7DBA7' },
+  screen: { flex: 1, backgroundColor: palette.yellow },
   header: { flexDirection: 'row', gap: 12, alignItems: 'center', paddingHorizontal: 18, paddingBottom: 14 },
-  iconButton: { padding: 10, borderRadius: 14, backgroundColor: '#FFFFFF99' },
+  iconButton: { padding: 10, borderRadius: 0, backgroundColor: palette.paper, borderWidth: 3, borderColor: palette.ink },
   title: { fontFamily: 'Poppins_700Bold', fontSize: 19, color: COLORS.primary },
   subtitle: { fontSize: 13, lineHeight: 19, color: COLORS.muted },
   mapArea: { flex: 1, minHeight: 160 },
-  searchOverlay: { position: 'absolute', top: 14, left: 16, right: 16, zIndex: 10, elevation: 6 },
-  searchInput: { height: 48, borderRadius: 14, color: COLORS.primary, backgroundColor: '#fff', fontSize: 14 },
-  results: { backgroundColor: '#fff', borderRadius: 14, maxHeight: 220 },
-  hint: { padding: 12, backgroundColor: '#fff', borderRadius: 12, color: COLORS.primary },
-  loading: { position: 'absolute', top: 80, alignSelf: 'center', padding: 12, borderRadius: 12, backgroundColor: '#FFFFFFE8', maxWidth: '85%', gap: 6 },
-  locate: { position: 'absolute', right: 16, bottom: 20, borderRadius: 26, padding: 14, backgroundColor: '#fff', elevation: 5 },
+  searchOverlay: { position: 'absolute', top: 14, left: 16, right: 16, zIndex: 10 },
+  searchInput: { height: 48, borderRadius: 0, color: COLORS.primary, backgroundColor: '#fff', fontSize: 14, borderWidth: 3, borderColor: palette.ink },
+  results: { backgroundColor: '#fff', borderRadius: 0, maxHeight: 220, borderWidth: 3, borderColor: palette.ink },
+  hint: { padding: 12, backgroundColor: '#fff', borderRadius: 0, color: COLORS.primary, borderWidth: 3, borderColor: palette.ink },
+  loading: { position: 'absolute', top: 80, alignSelf: 'center', padding: 12, borderRadius: 0, backgroundColor: palette.paper, maxWidth: '85%', gap: 6, borderWidth: 3, borderColor: palette.ink },
+  locate: { position: 'absolute', right: 16, bottom: 20, borderRadius: 0, padding: 14, backgroundColor: '#fff', borderWidth: 3, borderColor: palette.ink },
   footer: { backgroundColor: '#fff', padding: 16, gap: 6 },
-  sectionTitle: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 18, color: COLORS.primary },
+  sectionTitle: { fontFamily: "Poppins_700Bold", fontSize: 18, color: COLORS.primary },
   coordinates: { color: COLORS.muted, fontSize: 12, fontVariant: ['tabular-nums'] },
   notesToggle: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 8 },
   notesLabel: { flex: 1, color: COLORS.primary, fontSize: 13, fontWeight: '600' },
-  notesPanel: { padding: 10, borderRadius: 12, backgroundColor: '#F2F5F7' },
+  notesPanel: { padding: 10, borderRadius: 0, backgroundColor: '#F2F5F7', borderWidth: 3, borderColor: palette.ink },
   notesCount: { textAlign: 'right', color: COLORS.muted, fontSize: 11 },
-  notes: { minHeight: 66, maxHeight: 100, borderWidth: 1, borderColor: '#E4E8EB', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, color: COLORS.primary, marginVertical: 4 },
+  notes: { minHeight: 66, maxHeight: 100, borderWidth: 3, borderColor: palette.ink, borderRadius: 0, paddingHorizontal: 12, paddingVertical: 10, color: COLORS.primary, marginVertical: 4 },
   message: { color: '#9A4324', fontSize: 12, lineHeight: 17 },
-  submit: { flexDirection: 'row', gap: 8, justifyContent: 'center', alignItems: 'center', borderRadius: 16, backgroundColor: COLORS.primary, padding: 16 },
-  submitText: { color: '#fff', fontFamily: 'Urbanist_800ExtraBold', fontSize: 15 },
+  submit: { flexDirection: 'row', gap: 8, justifyContent: 'center', alignItems: 'center', borderRadius: 0, backgroundColor: COLORS.primary, padding: 16, borderWidth: 3, borderColor: palette.ink },
+  submitText: { color: '#fff', fontFamily: "Silkscreen_700Bold", fontSize: 14, letterSpacing: 0 },
   disabled: { opacity: 0.5 },
-  empty: { flex: 1, justifyContent: 'center', padding: 24, gap: 16, backgroundColor: '#F7DBA7' },
+  empty: { flex: 1, justifyContent: 'center', padding: 24, gap: 16, backgroundColor: palette.yellow },
 });

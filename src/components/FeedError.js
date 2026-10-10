@@ -1,10 +1,11 @@
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text } from 'react-native';
+import { palette, fonts } from '../design/theme';
+import ArcadeButton from './ArcadeButton';
 export default function FeedError({ message, onRetry }) {
-  return <View style={{ flex: 1, justifyContent: 'center', padding: 28, gap: 18, backgroundColor: '#F7DBA7' }}>
-    <Text accessibilityRole="alert" style={{ color: '#003459', fontSize: 16 }}>{message}</Text>
-    <TouchableOpacity accessibilityRole="button" onPress={onRetry} style={{ padding: 16, borderRadius: 16, backgroundColor: '#003459' }}>
-      <Text style={{ color: '#fff', textAlign: 'center', fontWeight: '700' }}>Retry</Text>
-    </TouchableOpacity>
+  return <View style={{ flex: 1, justifyContent: 'center', padding: 28, gap: 18, backgroundColor: palette.yellow }}>
+    <Text style={{ fontFamily: fonts.title, fontSize: 24 }}>CONNECTION PAUSED</Text>
+    <Text accessibilityRole="alert" style={{ color: palette.ink, fontFamily: fonts.body, fontSize: 14 }}>{message}</Text>
+    <ArcadeButton color={palette.mint} onPress={onRetry}>TRY AGAIN</ArcadeButton>
   </View>;
 }

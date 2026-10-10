@@ -1,12 +1,13 @@
+import { COLORS as ARCADE_COLORS, palette } from '../design/theme';
 import { useFeedStatus } from '../hooks/useFeedStatus';
 import FeedError from '../components/FeedError';
 // src/screens/ProfileScreen.js
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  View, Text, TouchableOpacity, StyleSheet, 
-  StatusBar, Alert, Image, ActivityIndicator, Animated, ScrollView 
+import {
+  View, Text, TouchableOpacity, StyleSheet,
+  StatusBar, Alert, Image, ActivityIndicator, Animated, ScrollView
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context'; 
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { sendEmailVerification } from 'firebase/auth';
 import { db, auth } from '../../firebase';
@@ -15,23 +16,9 @@ import { collection, query, onSnapshot, where, doc, runTransaction, or } from 'f
 import { useVerifiedEmail } from '../hooks/useVerifiedEmail';
 import { setPetMissing } from '../utils/missingPet';
 
-// 🎨 "MONITO" COLOR PALETTE
-const COLORS = {
-  primary: '#003459',       
-  background: '#F7DBA7',    
-  surface: '#FFFFFF',       
-  inputFill: '#F8F9FA',     // 🚀 NEW: Clean grey for card inner elements!
-  border: 'rgba(0, 52, 89, 0.1)', 
-  textDark: '#00171F',      
-  textMuted: '#52616B',     
-  
-  pinkRed: '#FF564F',
-  greenLight: '#34C759',
-  orangeShine: '#FF912C',
-  blueSea: '#00A7E7',
-};
+const COLORS = { ...ARCADE_COLORS, background: palette.purple };
 
-const HEADER_HEIGHT = 60; 
+const HEADER_HEIGHT = 60;
 
 const statusStyle = (status) => {
   switch (status) {
@@ -49,17 +36,17 @@ export default function ProfileScreen({ navigation }) {
   const [reports, setReports] = useState([]);
   const [applications, setApplications] = useState([]);
   const [animalCount, setAnimalCount] = useState(0);
-  
+
   const [userPets, setUserPets] = useState([]);
   const [loadingPets, setLoadingPets] = useState(true);
-  
+
   const user = auth.currentUser;
   const [isVerified, refreshVerification] = useVerifiedEmail();
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
   const scrollY = useRef(new Animated.Value(0)).current;
-  
+
   const clampedScrollY = Animated.diffClamp(
     scrollY.interpolate({
       inputRange: [0, 10000],
@@ -91,7 +78,7 @@ export default function ProfileScreen({ navigation }) {
         where('helperId', '==', user.uid)
       )
     );
-    
+
     const unsubReports = onSnapshot(reportsQuery, (snap) => {
       const fetchedReports = snap.docs.map(d => ({ ...d.data(), id: d.id }));
       fetchedReports.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
@@ -123,9 +110,9 @@ export default function ProfileScreen({ navigation }) {
       `Are you sure you want to mark ${pet.name} as missing? Their profile will appear in the public SOS feed so people can report sightings.`,
       [
         { text: "Cancel", style: "cancel" },
-        { 
-          text: "Yes, Send SOS", 
-          style: "destructive", 
+        {
+          text: "Yes, Send SOS",
+          style: "destructive",
           onPress: async () => {
             try {
               const petRef = doc(db, 'animals', pet.id);
@@ -134,7 +121,7 @@ export default function ProfileScreen({ navigation }) {
             } catch (error) {
               Alert.alert("Error", "Failed to send SOS. Please try again.");
             }
-          } 
+          }
         }
       ]
     );
@@ -146,9 +133,9 @@ export default function ProfileScreen({ navigation }) {
       `Have you safely located ${pet.name}?`,
       [
         { text: "Not yet", style: "cancel" },
-        { 
-          text: "Yes, they are safe!", 
-          style: "default", 
+        {
+          text: "Yes, they are safe!",
+          style: "default",
           onPress: async () => {
             try {
               const petRef = doc(db, 'animals', pet.id);
@@ -157,7 +144,7 @@ export default function ProfileScreen({ navigation }) {
             } catch (error) {
               Alert.alert("Error", "Failed to update status.");
             }
-          } 
+          }
         }
       ]
     );
@@ -178,31 +165,28 @@ export default function ProfileScreen({ navigation }) {
     <View style={styles.safe}>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent={true} />
 
-      <Image 
-        source={require('../../assets/images/app-bg.png')} 
-        style={styles.bgPattern} 
-      />
+
 
       <View style={{
         position: 'absolute',
         top: 0, left: 0, right: 0,
         height: insets.top,
         backgroundColor: COLORS.background,
-        zIndex: 101 
+        zIndex: 101
       }} />
 
       <Animated.View style={[
-        styles.header, 
-        { 
-          top: insets.top, 
-          height: HEADER_HEIGHT, 
-          transform: [{ translateY: headerTranslateY }] 
+        styles.header,
+        {
+          top: insets.top,
+          height: HEADER_HEIGHT,
+          transform: [{ translateY: headerTranslateY }]
         }
       ]}>
         <View style={styles.headerLeft}>
-          <Image 
-            source={require('../../assets/images/sc-logo.png')} 
-            style={styles.headerLogoIcon} 
+          <Image
+            source={require('../../assets/images/sc-logo.png')}
+            style={styles.headerLogoIcon}
           />
           <Text style={styles.headerTitle}>Profile</Text>
         </View>
@@ -211,12 +195,12 @@ export default function ProfileScreen({ navigation }) {
         </TouchableOpacity>
       </Animated.View>
 
-      <Animated.ScrollView 
-        style={styles.scroll} 
+      <Animated.ScrollView
+        style={styles.scroll}
         contentContainerStyle={[
           styles.scrollContent,
           { paddingTop: HEADER_HEIGHT + insets.top + 20 }
-        ]} 
+        ]}
         showsVerticalScrollIndicator={false}
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
@@ -224,9 +208,10 @@ export default function ProfileScreen({ navigation }) {
         )}
         scrollEventThrottle={16}
       >
-        
+
         <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
-          
+
+          <Text style={styles.impactTitle}>YOUR CARE COUNTS.</Text>
           <View style={styles.profileSection}>
             <View style={styles.avatarContainer}>
               <View style={styles.avatar}>
@@ -305,7 +290,7 @@ export default function ProfileScreen({ navigation }) {
                     <Text style={styles.petDetails}>
                       {pet.species} • {pet.breed} • {pet.age ? `${pet.age} yrs` : 'Age unknown'}
                     </Text>
-                    
+
                     {pet.isVerified ? (
                       <View style={[styles.trustBadge, { backgroundColor: '#E1F5FE' }]}>
                         <MaterialCommunityIcons name="shield-check" size={12} color={COLORS.blueSea} />
@@ -321,15 +306,15 @@ export default function ProfileScreen({ navigation }) {
                 </View>
 
                 <View style={styles.actionHub}>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={styles.actionBtn}
                     onPress={() => navigation.navigate('Browse', { screen: 'AnimalDetail', params: { animal: pet } })}
                   >
                     <MaterialCommunityIcons name="medical-bag" size={18} color={COLORS.primary} />
                     <Text style={styles.actionBtnText}>Medical</Text>
                   </TouchableOpacity>
-                  
-                  <TouchableOpacity 
+
+                  <TouchableOpacity
                     style={styles.actionBtn}
                     onPress={() => navigation.navigate('Browse', { screen: 'AnimalDetail', params: { animal: pet } })}
                   >
@@ -338,7 +323,7 @@ export default function ProfileScreen({ navigation }) {
                   </TouchableOpacity>
 
                   {pet.status === 'archived' ? (<Text style={styles.actionBtnText}>Archived</Text>) : pet.status === 'lost' ? (
-                    <TouchableOpacity 
+                    <TouchableOpacity
                       style={[styles.actionBtn, { backgroundColor: '#E8F5E9' }]}
                       onPress={() => handleMarkFound(pet)}
                     >
@@ -346,7 +331,7 @@ export default function ProfileScreen({ navigation }) {
                       <Text style={[styles.actionBtnText, { color: COLORS.greenLight }]}>Found</Text>
                     </TouchableOpacity>
                   ) : (
-                    <TouchableOpacity 
+                    <TouchableOpacity
                       style={[styles.actionBtn, { backgroundColor: '#FFEBEE' }]}
                       onPress={() => handleReportMissing(pet)}
                     >
@@ -361,7 +346,7 @@ export default function ProfileScreen({ navigation }) {
 
           <Text style={[styles.sectionTitle, { marginTop: 24 }]}>My adoption applications</Text>
           {!applications.length && <Text>No adoption applications yet.</Text>}
-          {applications.map(application => <View key={application.id} style={{ padding: 16, backgroundColor: '#fff', borderRadius: 16, marginBottom: 10 }}>
+          {applications.map(application => <View key={application.id} style={{ padding: 16, backgroundColor: palette.paper, borderWidth: 3, borderColor: palette.ink, marginBottom: 10 }}>
             <Text style={{ fontWeight: '700', color: COLORS.primary }}>{application.animalName || 'Pet adoption'}</Text>
             <Text style={{ textTransform: 'capitalize', marginTop: 4 }}>{application.status}</Text>
             {!!application.closeReason && <Text>{application.closeReason}</Text>}
@@ -379,8 +364,8 @@ export default function ProfileScreen({ navigation }) {
               const isHelper = report.helperId === user.uid;
 
               return (
-                <TouchableOpacity 
-                  key={report.id} 
+                <TouchableOpacity
+                  key={report.id}
                   style={styles.reportCard}
                   activeOpacity={0.8}
                   onPress={() => navigation.navigate('SOS Feed', { screen: 'AlertDetail', params: { alertItem: report } })}
@@ -412,89 +397,68 @@ export default function ProfileScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
+  impactTitle: { fontFamily: "Silkscreen_700Bold", fontSize: 23, marginBottom: 24, color: palette.ink },
   safe: { flex: 1, backgroundColor: COLORS.background },
-  
-  bgPattern: {
-    position: 'absolute',
-    width: '100%',
-    height: '100%',
-    opacity: 0.15,
-    resizeMode: 'cover',
-  },
 
-  header: { 
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    justifyContent: 'space-between', 
-    paddingHorizontal: 20, 
-    backgroundColor: COLORS.background, 
-    zIndex: 100 
-  },
+
+  header: { position: 'absolute', left: 0, right: 0, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, backgroundColor: COLORS.background, zIndex: 100, borderBottomWidth: 3, borderBottomColor: palette.ink },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  
-  headerLogoIcon: { 
-    width: 28, 
-    height: 28, 
-    resizeMode: 'contain',
-    borderRadius: 6,
-  },
 
-  headerTitle: { fontFamily: 'Poppins_900Black', fontSize: 18, color: COLORS.primary, letterSpacing: -0.5 },
-  headerBtn: { padding: 8, backgroundColor: 'rgba(255,255,255,0.6)', borderRadius: 12, borderWidth: 1, borderColor: COLORS.border },
-  
+  headerLogoIcon: { width: 28, height: 28, resizeMode: 'contain', borderRadius: 0 },
+
+  headerTitle: { fontFamily: "Silkscreen_700Bold", fontSize: 16, color: COLORS.primary, letterSpacing: 0 },
+  headerBtn: { padding: 8, backgroundColor: palette.paper, borderRadius: 0, borderWidth: 3, borderColor: palette.ink },
+
   scroll: { flex: 1 },
   scrollContent: { paddingHorizontal: 20, paddingBottom: 40 },
-  
+
   profileSection: { alignItems: 'center', marginBottom: 32 },
   avatarContainer: { position: 'relative', marginBottom: 16 },
-  avatar: { width: 96, height: 96, borderRadius: 32, backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center', shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.2, shadowRadius: 16, elevation: 5 },
-  avatarText: { fontFamily: 'Poppins_900Black', fontSize: 40, color: COLORS.surface },
-  verifiedDot: { position: 'absolute', bottom: -4, right: -4, backgroundColor: COLORS.background, borderRadius: 999, padding: 2 },
-  
-  userName: { fontFamily: 'Poppins_900Black', fontSize: 26, color: COLORS.primary, letterSpacing: -0.5, marginBottom: 4 },
-  userEmail: { fontFamily: 'Urbanist_600SemiBold', fontSize: 14, color: COLORS.textMuted, marginBottom: 16 },
-  
-  unverifiedBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#FFEBEE', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, marginBottom: 20 },
-  unverifiedText: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 12, color: COLORS.pinkRed },
-  
-  statsRow: { flexDirection: 'row', backgroundColor: COLORS.surface, borderRadius: 20, padding: 16, marginTop: 20, width: '100%', borderWidth: 1, borderColor: COLORS.border, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.03, shadowRadius: 8, elevation: 2 },
+  avatar: { width: 96, height: 96, borderRadius: 0, backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: palette.ink, boxShadow: "4px 4px 0px 0px #111111" },
+  avatarText: { fontFamily: "Silkscreen_700Bold", fontSize: 32, color: COLORS.surface, letterSpacing: 0 },
+  verifiedDot: { position: 'absolute', bottom: -4, right: -4, backgroundColor: COLORS.background, borderRadius: 0, padding: 2 },
+
+  userName: { fontFamily: "Silkscreen_700Bold", fontSize: 21, color: COLORS.primary, letterSpacing: 0, marginBottom: 4 },
+  userEmail: { fontFamily: "Poppins_700Bold", fontSize: 14, color: COLORS.textMuted, marginBottom: 16 },
+
+  unverifiedBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#FFEBEE', borderRadius: 0, paddingHorizontal: 12, paddingVertical: 6, marginBottom: 20, borderWidth: 3, borderColor: palette.ink },
+  unverifiedText: { fontFamily: "Poppins_700Bold", fontSize: 12, color: COLORS.pinkRed },
+
+  statsRow: { flexDirection: 'row', backgroundColor: palette.ink, borderRadius: 0, padding: 16, marginTop: 20, width: '100%', borderWidth: 3, borderColor: palette.ink, boxShadow: "4px 4px 0px 0px #111111" },
   statBox: { flex: 1, alignItems: 'center' },
   statDivider: { width: 1, backgroundColor: COLORS.border, marginVertical: 4 },
-  statNumber: { fontFamily: 'Poppins_900Black', fontSize: 24, color: COLORS.primary },
-  statLabel: { fontFamily: 'Urbanist_600SemiBold', fontSize: 12, color: COLORS.textMuted, marginTop: 2 },
-  
+  statNumber: { fontFamily: "Silkscreen_700Bold", fontSize: 19, color: palette.yellow, letterSpacing: 0 },
+  statLabel: { fontFamily: "Poppins_700Bold", fontSize: 12, color: palette.mint, marginTop: 2 },
+
   sectionHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  sectionTitle: { fontFamily: 'Poppins_900Black', fontSize: 20, color: COLORS.primary, letterSpacing: -0.5, marginBottom: 12 },
-  addBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.primary, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12, gap: 4 },
-  addBtnText: { fontFamily: 'Urbanist_800ExtraBold', color: COLORS.surface, fontSize: 13 },
-  
-  emptyState: { alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.5)', padding: 32, borderRadius: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.8)', marginBottom: 24 },
-  emptyTitle: { fontFamily: 'Poppins_900Black', fontSize: 16, color: COLORS.primary, marginTop: 12, marginBottom: 6 },
-  emptySub: { fontFamily: 'Urbanist_600SemiBold', fontSize: 13, color: COLORS.textMuted, textAlign: 'center', lineHeight: 20 },
-  
-  passportCard: { backgroundColor: COLORS.surface, borderRadius: 24, padding: 16, marginBottom: 20, borderWidth: 1, borderColor: COLORS.border, shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.04, shadowRadius: 12, elevation: 3 },
+  sectionTitle: { fontFamily: "Silkscreen_700Bold", fontSize: 16, color: COLORS.primary, letterSpacing: 0, marginBottom: 12 },
+  addBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.primary, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 0, gap: 4, borderWidth: 3, borderColor: palette.ink },
+  addBtnText: { fontFamily: "Poppins_700Bold", color: COLORS.surface, fontSize: 13 },
+
+  emptyState: { alignItems: 'center', backgroundColor: palette.paper, padding: 32, borderRadius: 0, borderWidth: 3, borderColor: palette.ink, marginBottom: 24 },
+  emptyTitle: { fontFamily: "Silkscreen_700Bold", fontSize: 16, color: COLORS.primary, marginTop: 12, marginBottom: 6, letterSpacing: 0 },
+  emptySub: { fontFamily: "Poppins_700Bold", fontSize: 13, color: COLORS.textMuted, textAlign: 'center', lineHeight: 20 },
+
+  passportCard: { backgroundColor: COLORS.surface, borderRadius: 0, padding: 16, marginBottom: 20, borderWidth: 3, borderColor: palette.ink, boxShadow: "4px 4px 0px 0px #111111" },
   passportHeader: { flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 16 },
   // 🚀 FIXED: Swapped from COLORS.background to COLORS.inputFill for the photo box
-  passportImageContainer: { width: 64, height: 64, borderRadius: 18, backgroundColor: COLORS.inputFill, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
+  passportImageContainer: { width: 64, height: 64, borderRadius: 0, backgroundColor: COLORS.inputFill, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
   passportImage: { width: '100%', height: '100%' },
   passportInfo: { flex: 1 },
-  petName: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 18, color: COLORS.primary, marginBottom: 2, letterSpacing: -0.3 },
-  petDetails: { fontFamily: 'Urbanist_600SemiBold', fontSize: 12, color: COLORS.textMuted, textTransform: 'capitalize', marginBottom: 8 },
-  trustBadge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, gap: 4, alignSelf: 'flex-start' },
-  trustText: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 10 },
-  
-  actionHub: { flexDirection: 'row', gap: 8, borderTopWidth: 1, borderTopColor: COLORS.border, paddingTop: 16 },
+  petName: { fontFamily: "Poppins_700Bold", fontSize: 18, color: COLORS.primary, marginBottom: 2, letterSpacing: -0.3 },
+  petDetails: { fontFamily: "Poppins_700Bold", fontSize: 12, color: COLORS.textMuted, textTransform: 'capitalize', marginBottom: 8 },
+  trustBadge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 0, gap: 4, alignSelf: 'flex-start' },
+  trustText: { fontFamily: "Poppins_700Bold", fontSize: 10 },
+
+  actionHub: { flexDirection: 'row', gap: 8, borderTopWidth: 3, borderTopColor: palette.ink, paddingTop: 16 },
   // 🚀 FIXED: Swapped from COLORS.background to COLORS.inputFill for the buttons
-  actionBtn: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 12, backgroundColor: COLORS.inputFill, borderRadius: 12, gap: 6 },
-  actionBtnText: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 12, color: COLORS.primary },
-  
-  reportCard: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: COLORS.surface, borderRadius: 20, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: COLORS.border, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.03, shadowRadius: 8, elevation: 2 },
-  reportIconBox: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  reportTitle: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 15, color: COLORS.primary, marginBottom: 4, textTransform: 'capitalize', letterSpacing: -0.3 },
-  reportMeta: { fontFamily: 'Urbanist_500Medium', fontSize: 12, color: COLORS.textMuted },
-  statusBadge: { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 },
-  statusText: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 10, letterSpacing: 0.5 },
+  actionBtn: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 12, backgroundColor: COLORS.inputFill, borderRadius: 0, gap: 6, borderWidth: 3, borderColor: palette.ink },
+  actionBtnText: { fontFamily: "Poppins_700Bold", fontSize: 12, color: COLORS.primary },
+
+  reportCard: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: COLORS.surface, borderRadius: 0, padding: 16, marginBottom: 12, borderWidth: 3, borderColor: palette.ink, boxShadow: "4px 4px 0px 0px #111111" },
+  reportIconBox: { width: 48, height: 48, borderRadius: 0, alignItems: 'center', justifyContent: 'center' },
+  reportTitle: { fontFamily: "Poppins_700Bold", fontSize: 15, color: COLORS.primary, marginBottom: 4, textTransform: 'capitalize', letterSpacing: -0.3 },
+  reportMeta: { fontFamily: "Poppins_400Regular", fontSize: 12, color: COLORS.textMuted },
+  statusBadge: { borderRadius: 0, paddingHorizontal: 10, paddingVertical: 6 },
+  statusText: { fontFamily: "Poppins_700Bold", fontSize: 10, letterSpacing: 0.5 },
 });

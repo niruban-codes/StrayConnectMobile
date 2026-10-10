@@ -1,31 +1,20 @@
+import { COLORS as ARCADE_COLORS, palette } from '../design/theme';
 // src/screens/RegisterPetScreen.js
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   ScrollView, StatusBar, Image, Alert, ActivityIndicator, Animated
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context'; 
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { db, auth } from '../../firebase';
 import { collection, addDoc } from 'firebase/firestore';
 
-// 🎨 "MONITO" COLOR PALETTE 
-const COLORS = {
-  primary: '#003459',       // Dark Blue
-  background: '#F7DBA7',    // Mon Yellow - MAIN BACKGROUND
-  surface: '#FFFFFF',       // Pure White
-  border: 'rgba(0, 52, 89, 0.1)', 
-  textDark: '#00171F',      
-  textMuted: '#52616B',     
-  
-  pinkRed: '#FF564F',
-  blueSea: '#00A7E7',
-  orangeShine: '#FF912C',
-};
+const COLORS = { ...ARCADE_COLORS, background: palette.yellow };
 
 export default function RegisterPetScreen({ navigation }) {
-  const insets = useSafeAreaInsets(); 
+  const insets = useSafeAreaInsets();
 
   const [name, setName] = useState('');
   const [species, setSpecies] = useState('Dog');
@@ -33,7 +22,7 @@ export default function RegisterPetScreen({ navigation }) {
   const [age, setAge] = useState('');
   const [sex, setSex] = useState('Male');
   const [contact, setContact] = useState('');
-  const [location, setLocation] = useState(''); 
+  const [location, setLocation] = useState('');
   const [imageUri, setImageUri] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -63,7 +52,7 @@ export default function RegisterPetScreen({ navigation }) {
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [4, 3],
-      quality: 0.5, 
+      quality: 0.5,
     });
 
     if (!result.canceled) {
@@ -100,7 +89,7 @@ export default function RegisterPetScreen({ navigation }) {
         headers: { 'Accept': 'application/json', 'Content-Type': 'multipart/form-data' },
       });
       const uploadResult = await response.json();
-      
+
       if (!uploadResult.secure_url) throw new Error("Image upload failed.");
 
       // B. Save to Firestore (The Critical Security Logic!)
@@ -112,20 +101,20 @@ export default function RegisterPetScreen({ navigation }) {
         sex: sex.toLowerCase(),
         imageUrl: uploadResult.secure_url,
         ownerContact: contact,
-        location: location, 
-        
+        location: location,
+
         // THE TRUST PIPELINE:
         status: 'owned',           // Prevents adoption routing
         isVerified: false,         // Requires Vet approval
         ownerId: currentUser.uid,  // Links to the user's Profile
-        
+
         addedAt: new Date(),
         vaccinations: [],
         medicalHistory: []
       });
 
       Alert.alert(
-        'Registration Submitted! 🐾', 
+        'Registration Submitted! 🐾',
         'Your pet is now pending Vet Verification. Visit a registered StrayConnect vet to get your official SC-ID and collar!',
         [{ text: 'OK', onPress: () => navigation.goBack() }]
       );
@@ -140,12 +129,8 @@ export default function RegisterPetScreen({ navigation }) {
   return (
     <View style={[styles.safe, { paddingTop: insets.top }]}>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent={true} />
-      
-      {/* 🚀 CUSTOM TOPOGRAPHIC BACKGROUND */}
-      <Image 
-        source={require('../../assets/images/app-bg.png')} 
-        style={styles.bgPattern} 
-      />
+
+
 
       {/* 🌟 HEADER */}
       <View style={styles.header}>
@@ -156,19 +141,19 @@ export default function RegisterPetScreen({ navigation }) {
         <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView 
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom + 20, 60) }]} 
+      <ScrollView
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom + 20, 60) }]}
         showsVerticalScrollIndicator={false}
       >
-        
+
         <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
-          
+
           <View style={styles.infoBanner}>
             <View style={styles.infoIconBg}>
               <MaterialCommunityIcons name="shield-check-outline" size={20} color={COLORS.blueSea} />
             </View>
             <Text style={styles.bannerText}>
-              Self-registered pets will be marked as <Text style={{fontFamily: 'Urbanist_800ExtraBold', color: COLORS.primary}}>Pending Verification</Text> until examined by a registered Vet.
+              Self-registered pets will be marked as <Text style={{fontFamily: 'Poppins_700Bold', color: COLORS.primary}}>Pending Verification</Text> until examined by a registered Vet.
             </Text>
           </View>
 
@@ -192,24 +177,24 @@ export default function RegisterPetScreen({ navigation }) {
 
           <View style={styles.formGroup}>
             <Text style={styles.label}>Emergency Contact Number</Text>
-            <TextInput 
-              style={styles.input} 
-              value={contact} 
-              onChangeText={setContact} 
-              placeholder="e.g., 077 123 4567" 
+            <TextInput
+              style={styles.input}
+              value={contact}
+              onChangeText={setContact}
+              placeholder="e.g., 077 123 4567"
               keyboardType="phone-pad"
-              placeholderTextColor={COLORS.textMuted} 
+              placeholderTextColor={COLORS.textMuted}
             />
           </View>
 
           <View style={styles.formGroup}>
             <Text style={styles.label}>City / Area *</Text>
-            <TextInput 
-              style={styles.input} 
-              value={location} 
-              onChangeText={setLocation} 
-              placeholder="e.g., Colombo 07" 
-              placeholderTextColor={COLORS.textMuted} 
+            <TextInput
+              style={styles.input}
+              value={location}
+              onChangeText={setLocation}
+              placeholder="e.g., Colombo 07"
+              placeholderTextColor={COLORS.textMuted}
             />
           </View>
 
@@ -217,9 +202,9 @@ export default function RegisterPetScreen({ navigation }) {
             <Text style={styles.label}>Species</Text>
             <View style={[styles.pillRow, { flexWrap: 'wrap' }]}>
               {['Dog', 'Cat', 'Bird', 'Rabbit', 'Reptile', 'Livestock', 'Other'].map(s => (
-                <TouchableOpacity 
-                  key={s} 
-                  style={[styles.pill, species === s && styles.pillActive]} 
+                <TouchableOpacity
+                  key={s}
+                  style={[styles.pill, species === s && styles.pillActive]}
                   onPress={() => setSpecies(s)}
                   activeOpacity={0.8}
                 >
@@ -271,48 +256,41 @@ export default function RegisterPetScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: COLORS.background },
-  
+
   // 🚀 Background Pattern
-  bgPattern: {
-    position: 'absolute',
-    width: '100%',
-    height: '100%',
-    opacity: 0.15,
-    resizeMode: 'cover',
-  },
 
   // Header
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 10 },
-  backBtn: { padding: 8, backgroundColor: 'rgba(255,255,255,0.6)', borderRadius: 12, borderWidth: 1, borderColor: COLORS.border },
-  headerTitle: { fontFamily: 'Poppins_900Black', fontSize: 18, color: COLORS.primary, letterSpacing: -0.5 },
-  
+  backBtn: { padding: 8, backgroundColor: palette.paper, borderRadius: 0, borderWidth: 3, borderColor: palette.ink },
+  headerTitle: { fontFamily: "Silkscreen_700Bold", fontSize: 16, color: COLORS.primary, letterSpacing: 0 },
+
   scrollContent: { paddingHorizontal: 20, paddingTop: 10 },
-  
+
   // Info Banner
-  infoBanner: { flexDirection: 'row', backgroundColor: COLORS.surface, padding: 16, borderRadius: 20, marginBottom: 24, alignItems: 'center', gap: 12, borderWidth: 1, borderColor: COLORS.border, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.03, shadowRadius: 8, elevation: 2 },
-  infoIconBg: { width: 40, height: 40, borderRadius: 12, backgroundColor: '#E1F5FE', alignItems: 'center', justifyContent: 'center' },
-  bannerText: { flex: 1, fontFamily: 'Urbanist_500Medium', fontSize: 13, color: COLORS.textMuted, lineHeight: 20 },
-  
+  infoBanner: { flexDirection: 'row', backgroundColor: COLORS.surface, padding: 16, borderRadius: 0, marginBottom: 24, alignItems: 'center', gap: 12, borderWidth: 3, borderColor: palette.ink, boxShadow: "4px 4px 0px 0px #111111" },
+  infoIconBg: { width: 40, height: 40, borderRadius: 0, backgroundColor: '#E1F5FE', alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: palette.ink },
+  bannerText: { flex: 1, fontFamily: "Poppins_400Regular", fontSize: 13, color: COLORS.textMuted, lineHeight: 20 },
+
   // Image Picker
-  imagePicker: { width: '100%', height: 200, backgroundColor: 'rgba(255,255,255,0.6)', borderRadius: 24, overflow: 'hidden', marginBottom: 24, borderWidth: 2, borderColor: 'rgba(0, 52, 89, 0.2)', borderStyle: 'dashed' },
+  imagePicker: { width: '100%', height: 200, backgroundColor: palette.paper, borderRadius: 0, overflow: 'hidden', marginBottom: 24, borderWidth: 3, borderColor: palette.ink, borderStyle: 'dashed' },
   previewImage: { width: '100%', height: '100%', resizeMode: 'cover' },
   imagePlaceholder: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8 },
-  imagePlaceholderText: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 14, color: COLORS.primary, opacity: 0.7 },
-  
+  imagePlaceholderText: { fontFamily: "Poppins_700Bold", fontSize: 14, color: COLORS.primary, opacity: 0.7 },
+
   // Form Inputs
   formGroup: { marginBottom: 20 },
   row: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
-  label: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 14, color: COLORS.primary, marginBottom: 8, letterSpacing: -0.3 },
-  input: { backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border, borderRadius: 16, padding: 16, fontFamily: 'Urbanist_600SemiBold', fontSize: 15, color: COLORS.textDark, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.02, shadowRadius: 4, elevation: 1 },
-  
+  label: { fontFamily: "Poppins_700Bold", fontSize: 14, color: COLORS.primary, marginBottom: 8, letterSpacing: -0.3 },
+  input: { backgroundColor: COLORS.surface, borderWidth: 3, borderColor: palette.ink, borderRadius: 0, padding: 16, fontFamily: "Poppins_700Bold", fontSize: 15, color: COLORS.textDark, boxShadow: "4px 4px 0px 0px #111111" },
+
   // Chips / Pills
   pillRow: { flexDirection: 'row', gap: 8 },
-  pill: { paddingHorizontal: 16, paddingVertical: 12, borderRadius: 12, backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border },
-  pillActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-  pillText: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 13, color: COLORS.textMuted },
+  pill: { paddingHorizontal: 16, paddingVertical: 12, borderRadius: 0, backgroundColor: COLORS.surface, borderWidth: 3, borderColor: palette.ink },
+  pillActive: { backgroundColor: COLORS.primary, borderColor: palette.ink },
+  pillText: { fontFamily: "Poppins_700Bold", fontSize: 13, color: COLORS.textMuted },
   pillTextActive: { color: COLORS.surface },
-  
+
   // Submit Button
-  submitBtn: { backgroundColor: COLORS.primary, borderRadius: 16, paddingVertical: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, marginTop: 16, shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.2, shadowRadius: 12, elevation: 5 },
-  submitBtnText: { fontFamily: 'Urbanist_800ExtraBold', color: COLORS.surface, fontSize: 16, letterSpacing: -0.3 },
+  submitBtn: { backgroundColor: COLORS.primary, borderRadius: 0, paddingVertical: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, marginTop: 16, borderWidth: 3, borderColor: palette.ink, boxShadow: "4px 4px 0px 0px #111111" },
+  submitBtnText: { fontFamily: "Poppins_700Bold", color: COLORS.surface, fontSize: 16, letterSpacing: -0.3 },
 });

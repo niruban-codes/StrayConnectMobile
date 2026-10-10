@@ -1,3 +1,5 @@
+import { COLORS as ARCADE_COLORS, palette } from '../design/theme';
+import PassportStatus from '../components/PassportStatus';
 // src/screens/AnimalDetailScreen.js
 import React, { useState, useEffect, useRef } from 'react';
 import {
@@ -5,7 +7,7 @@ import {
   StyleSheet, Image, StatusBar,
   Linking, Alert, Modal, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator, Animated
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context'; 
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { db, auth } from '../../firebase';
 import { collection, doc, runTransaction, onSnapshot, getDocs, query, where, serverTimestamp } from 'firebase/firestore';
@@ -14,21 +16,7 @@ import { applicationId, submitAdoption } from '../utils/adoptionApplication';
 import { refreshVerifiedUser } from '../services/emailVerification';
 import { changePetStatus } from '../utils/petStatus';
 
-// 🎨 "MONITO" COLOR PALETTE 
-const COLORS = {
-  primary: '#003459',       // Dark Blue
-  background: '#F7DBA7',    // Mon Yellow - MAIN BACKGROUND
-  surface: '#FFFFFF',       // Pure White
-  inputFill: '#F8F9FA',     // 🚀 NEW: Clean grey for form inputs!
-  border: 'rgba(0, 52, 89, 0.1)', 
-  textDark: '#00171F',      
-  textMuted: '#52616B',     
-  
-  pinkRed: '#FF564F',
-  greenLight: '#34C759',
-  orangeShine: '#FF912C',
-  blueSea: '#00A7E7',
-};
+const COLORS = { ...ARCADE_COLORS, background: palette.mint };
 
 const statusStyle = (status) => {
   switch (status) {
@@ -40,11 +28,11 @@ const statusStyle = (status) => {
 };
 
 export default function AnimalDetailScreen({ route, navigation }) {
-  const insets = useSafeAreaInsets(); 
+  const insets = useSafeAreaInsets();
   const { animal: initialAnimal } = route.params;
   const [animal, setAnimal] = useState(initialAnimal);
   const [activeTab, setActiveTab] = useState('vaccinations');
-  
+
   const currentStatus = animal.status;
   const sc = statusStyle(currentStatus);
 
@@ -95,10 +83,10 @@ export default function AnimalDetailScreen({ route, navigation }) {
   const handleContact = () => {
     if (currentStatus === 'lost' && animal.ownerContact) {
       Linking.openURL(`tel:${animal.ownerContact}`);
-    } 
+    }
     else if (animal.shelter?.contactNumber) {
       Linking.openURL(`tel:${animal.shelter.contactNumber}`);
-    } 
+    }
     else {
       Alert.alert('No contact', 'No contact number available for this animal.');
     }
@@ -113,7 +101,7 @@ export default function AnimalDetailScreen({ route, navigation }) {
       Alert.alert('Already Adopted', `${animal.name || 'This pet'} has already found a forever home!`);
       return;
     }
-    
+
     if (currentStatus === 'owned' && !isOwner) {
       Alert.alert('Not for Adoption', `${animal.name || 'This pet'} is a registered owned pet.`);
       return;
@@ -121,7 +109,7 @@ export default function AnimalDetailScreen({ route, navigation }) {
 
     if (!currentUser || !currentUser.emailVerified) {
       Alert.alert(
-        'Verification Required', 
+        'Verification Required',
         'Please verify your email address before applying to adopt. Check your Profile tab to resend the link!'
       );
       return;
@@ -136,8 +124,8 @@ export default function AnimalDetailScreen({ route, navigation }) {
       `Are you sure you want to list ${animal.name} for adoption? This will make their profile public on the community feed for potential adopters to see.`,
       [
         { text: "Cancel", style: "cancel" },
-        { 
-          text: "Yes, List for Adoption", 
+        {
+          text: "Yes, List for Adoption",
           style: "destructive",
           onPress: async () => {
             try {
@@ -169,9 +157,9 @@ export default function AnimalDetailScreen({ route, navigation }) {
       await runTransaction(db, tx => submitAdoption(tx, doc(db, 'animals', animal.id), requestRef, applicant,
         { livingSituation, experience, message: message.trim() }, serverTimestamp(), legacy.docs.filter(item => item.id !== requestRef.id).map(item => item.ref)));
       setIsModalVisible(false);
-      setMessage(''); 
+      setMessage('');
       Alert.alert(
-        'Application Sent! 🐾', 
+        'Application Sent! 🐾',
         `The sanctuary has received your inquiry for ${animal.name || 'this pet'}. \n\nTrack your application in Profile under My adoption applications. The shelter will review your request.`,
         [{ text: 'I will do that!' }]
       );
@@ -202,7 +190,7 @@ export default function AnimalDetailScreen({ route, navigation }) {
           </View>
         )}
         <View style={styles.heroOverlay} />
-        
+
         <View style={[styles.header, { paddingTop: Math.max(insets.top, 16) }]}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
             <MaterialCommunityIcons name="arrow-left" size={24} color={COLORS.primary} />
@@ -213,15 +201,11 @@ export default function AnimalDetailScreen({ route, navigation }) {
       {/* 🌟 ANIMATED BOTTOM SHEET */}
       <Animated.View style={[styles.sheetShadowContainer, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
         <View style={styles.sheetInner}>
-          
-          {/* 🚀 CUSTOM TOPOGRAPHIC BACKGROUND */}
-          <Image 
-            source={require('../../assets/images/app-bg.png')} 
-            style={styles.bgPattern} 
-          />
 
-          <ScrollView 
-            showsVerticalScrollIndicator={false} 
+
+
+          <ScrollView
+            showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingBottom: 120 + insets.bottom, paddingHorizontal: 24, paddingTop: 16 }}
           >
             <View style={styles.sheetHandle} />
@@ -260,7 +244,7 @@ export default function AnimalDetailScreen({ route, navigation }) {
                 { label: 'Age', value: animal.age ? `${animal.age} yrs` : 'Unknown', icon: 'calendar-outline' },
                 { label: 'Location', value: animal.location || 'Unknown', icon: 'map-marker-outline' },
                 { label: 'Status', value: currentStatus || 'Unknown', icon: 'information-outline' },
-                { label: 'Health', value: 'Stable', icon: 'heart-pulse' },
+                { label: 'Health', value: 'See records', icon: 'heart-pulse' },
               ].map(stat => (
                 <View key={stat.label} style={styles.statBox}>
                   <View style={styles.statIconBg}>
@@ -268,12 +252,13 @@ export default function AnimalDetailScreen({ route, navigation }) {
                   </View>
                   <View style={{ flexShrink: 1 }}>
                     <Text style={styles.statLabel}>{stat.label}</Text>
-                    <Text style={styles.statValue} numberOfLines={1}>{stat.value}</Text>
+                    <Text style={styles.statValue} numberOfLines={2}>{stat.value}</Text>
                   </View>
                 </View>
               ))}
             </View>
 
+            <PassportStatus animal={animal} />
             {/* Tabs */}
             <View style={styles.tabBar}>
               {TABS.map(tab => (
@@ -391,7 +376,7 @@ export default function AnimalDetailScreen({ route, navigation }) {
               <View style={styles.tagRow}>
                 {animal.vaccinations?.length > 0 && (
                   <View style={[styles.tag, { backgroundColor: '#E8F5E9', borderColor: COLORS.greenLight }]}>
-                    <Text style={[styles.tagText, { color: COLORS.greenLight }]}>Vaccinated</Text>
+                    <Text style={[styles.tagText, { color: COLORS.greenLight }]}>Vaccine records</Text>
                   </View>
                 )}
                 <View style={styles.tag}>
@@ -411,34 +396,34 @@ export default function AnimalDetailScreen({ route, navigation }) {
       </Animated.View>
 
       {/* 🌟 FIXED ACTION BAR */}
-      <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom + 16, 36) }]}>
+      <View style={styles.bottomBar}>
         <TouchableOpacity style={styles.secondaryBtn} onPress={handleContact}>
           <MaterialCommunityIcons name="phone-outline" size={26} color={COLORS.primary} />
         </TouchableOpacity>
 
         {currentStatus === 'archived' ? (<Text style={{ color: COLORS.textMuted }}>Archived passport — medical history remains available.</Text>) : currentStatus === 'owned' && isOwner ? (
-          <TouchableOpacity 
-            style={[styles.primaryBtn, { backgroundColor: COLORS.orangeShine }]} 
+          <TouchableOpacity
+            style={[styles.primaryBtn, { backgroundColor: COLORS.orangeShine }]}
             onPress={handleOwnerRehome}
           >
             <MaterialCommunityIcons name="home-export-outline" size={22} color={COLORS.surface} style={{ marginRight: 8 }} />
             <Text style={styles.primaryBtnText}>Put Up For Adoption</Text>
           </TouchableOpacity>
         ) : currentStatus === 'owned' && !isOwner ? (
-          <View style={[styles.primaryBtn, { backgroundColor: 'rgba(0, 52, 89, 0.1)', shadowOpacity: 0 }]}>
+          <View style={[styles.primaryBtn, { backgroundColor: 'rgba(0, 52, 89, 0.1)', boxShadow: 'none' }]}>
             <Text style={[styles.primaryBtnText, { color: COLORS.textMuted }]}>Not for Adoption</Text>
           </View>
         ) : currentStatus === 'lost' ? (
-          <TouchableOpacity 
-            style={[styles.primaryBtn, { backgroundColor: COLORS.pinkRed }]} 
+          <TouchableOpacity
+            style={[styles.primaryBtn, { backgroundColor: COLORS.pinkRed }]}
             onPress={() => navigation.navigate('SightingMap', { animal: animal })}
           >
             <MaterialCommunityIcons name="run-fast" size={22} color={COLORS.surface} style={{ marginRight: 8 }} />
             <Text style={styles.primaryBtnText}>I Found This Pet</Text>
           </TouchableOpacity>
         ) : (
-          <TouchableOpacity 
-            style={[styles.primaryBtn, currentStatus === 'adopted' && { backgroundColor: 'rgba(0, 52, 89, 0.1)', shadowOpacity: 0 }]} 
+          <TouchableOpacity
+            style={[styles.primaryBtn, currentStatus === 'adopted' && { backgroundColor: 'rgba(0, 52, 89, 0.1)', boxShadow: 'none' }]}
             onPress={handleAdoptPress}
             disabled={currentStatus === 'adopted' || !animal.isVerified}
           >
@@ -453,7 +438,7 @@ export default function AnimalDetailScreen({ route, navigation }) {
       <Modal visible={isModalVisible} transparent={true} animationType="slide">
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalContainer}>
           <View style={[styles.modalContent, { paddingBottom: Math.max(insets.bottom + 20, 40) }]}>
-            
+
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Adoption Inquiry</Text>
               <TouchableOpacity onPress={() => setIsModalVisible(false)} style={styles.modalCloseBtn}>
@@ -467,8 +452,8 @@ export default function AnimalDetailScreen({ route, navigation }) {
               <Text style={styles.inputLabel}>Living Situation</Text>
               <View style={styles.pillRow}>
                 {['Apartment', 'House', 'Estate/Farm'].map(opt => (
-                  <TouchableOpacity 
-                    key={opt} 
+                  <TouchableOpacity
+                    key={opt}
                     style={[styles.pill, livingSituation === opt && styles.pillActive]}
                     onPress={() => setLivingSituation(opt)}
                   >
@@ -480,8 +465,8 @@ export default function AnimalDetailScreen({ route, navigation }) {
               <Text style={styles.inputLabel}>Pet Experience</Text>
               <View style={styles.pillRow}>
                 {['First-time owner', 'Have had pets', 'Experienced rescuer'].map(opt => (
-                  <TouchableOpacity 
-                    key={opt} 
+                  <TouchableOpacity
+                    key={opt}
                     style={[styles.pill, experience === opt && styles.pillActive]}
                     onPress={() => setExperience(opt)}
                   >
@@ -502,8 +487,8 @@ export default function AnimalDetailScreen({ route, navigation }) {
                 textAlignVertical="top"
               />
 
-              <TouchableOpacity 
-                style={[styles.submitAppBtn, submitting && { opacity: 0.7 }]} 
+              <TouchableOpacity
+                style={[styles.submitAppBtn, submitting && { opacity: 0.7 }]}
                 onPress={submitApplication}
                 disabled={submitting}
               >
@@ -527,92 +512,91 @@ export default function AnimalDetailScreen({ route, navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
-  
+
   // Hero Section
   heroContainer: { width: '100%', height: 350, position: 'absolute', top: 0, left: 0 },
   heroImage: { width: '100%', height: '100%', resizeMode: 'cover' },
   heroPlaceholder: { backgroundColor: COLORS.border, alignItems: 'center', justifyContent: 'center' },
   heroOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 120, backgroundColor: 'rgba(0,0,0,0.2)' },
-  
+
   // Floating Header
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 },
-  backBtn: { padding: 10, backgroundColor: 'rgba(255,255,255,0.85)', borderRadius: 999, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8 },
-  
+  backBtn: { padding: 10, backgroundColor: palette.paper, borderRadius: 0, borderWidth: 3, borderColor: palette.ink, boxShadow: "4px 4px 0px 0px #111111" },
+
   // Animated Sheet
-  sheetShadowContainer: { flex: 1, marginTop: 280, shadowColor: '#000', shadowOffset: { width: 0, height: -10 }, shadowOpacity: 0.1, shadowRadius: 20, elevation: 10 },
-  sheetInner: { flex: 1, backgroundColor: COLORS.background, borderTopLeftRadius: 32, borderTopRightRadius: 32, overflow: 'hidden' },
-  bgPattern: { position: 'absolute', width: '100%', height: '100%', opacity: 0.15, resizeMode: 'cover' },
-  sheetHandle: { width: 40, height: 5, backgroundColor: 'rgba(0, 52, 89, 0.2)', borderRadius: 3, alignSelf: 'center', marginBottom: 20 },
-  
+  sheetShadowContainer: { flex: 1, marginTop: 280, boxShadow: "4px 4px 0px 0px #111111" },
+  sheetInner: { flex: 1, backgroundColor: COLORS.background, borderTopLeftRadius: 0, borderTopRightRadius: 0, overflow: 'hidden', borderWidth: 3, borderColor: palette.ink },
+  sheetHandle: { width: 40, height: 5, backgroundColor: 'rgba(0, 52, 89, 0.2)', borderRadius: 0, alignSelf: 'center', marginBottom: 20 },
+
   // Title & Badges
   badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
-  idBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: COLORS.primary, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 },
-  idText: { fontFamily: 'Urbanist_800ExtraBold', color: COLORS.surface, fontSize: 11 },
-  statusPill: { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 },
-  statusPillText: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5 },
-  animalName: { fontFamily: 'Poppins_900Black', fontSize: 36, color: COLORS.primary, letterSpacing: -1, marginBottom: 6 },
-  animalSubtitle: { fontFamily: 'Urbanist_600SemiBold', fontSize: 16, color: COLORS.textMuted, marginBottom: 24, textTransform: 'capitalize' },
-  
+  idBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: COLORS.primary, borderRadius: 0, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 3, borderColor: palette.ink },
+  idText: { fontFamily: "Poppins_700Bold", color: COLORS.surface, fontSize: 11 },
+  statusPill: { borderRadius: 0, paddingHorizontal: 10, paddingVertical: 6 },
+  statusPillText: { fontFamily: "Poppins_700Bold", fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5 },
+  animalName: { fontFamily: "Silkscreen_700Bold", fontSize: 29, color: COLORS.primary, letterSpacing: 0, marginBottom: 6 },
+  animalSubtitle: { fontFamily: "Poppins_700Bold", fontSize: 16, color: COLORS.textMuted, marginBottom: 24, textTransform: 'capitalize' },
+
   // Stats Grid
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 32 },
-  statBox: { flex: 1, minWidth: '45%', flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.surface, borderRadius: 16, padding: 12, gap: 12, borderWidth: 1, borderColor: COLORS.border },
-  statIconBg: { width: 36, height: 36, borderRadius: 10, backgroundColor: '#E1F5FE', alignItems: 'center', justifyContent: 'center' },
-  statLabel: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 11, color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
-  statValue: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 15, color: COLORS.textDark, textTransform: 'capitalize' },
-  
+  statBox: { flex: 1, minWidth: '45%', flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.surface, borderRadius: 0, padding: 12, gap: 12, borderWidth: 3, borderColor: palette.ink },
+  statIconBg: { width: 36, height: 36, borderRadius: 0, backgroundColor: '#E1F5FE', alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: palette.ink },
+  statLabel: { fontFamily: "Poppins_700Bold", fontSize: 11, color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
+  statValue: { fontFamily: "Poppins_700Bold", fontSize: 15, color: COLORS.textDark, textTransform: 'capitalize' },
+
   // Tabs
-  tabBar: { flexDirection: 'row', backgroundColor: COLORS.surface, borderRadius: 16, padding: 6, gap: 6, borderWidth: 1, borderColor: COLORS.border },
-  tabBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 12, borderRadius: 12 },
-  tabBtnActive: { backgroundColor: COLORS.primary, shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 4 },
-  tabText: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 13, color: COLORS.textMuted },
+  tabBar: { flexDirection: 'row', backgroundColor: COLORS.surface, borderRadius: 0, padding: 6, gap: 6, borderWidth: 3, borderColor: palette.ink },
+  tabBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 12, borderRadius: 0 },
+  tabBtnActive: { backgroundColor: COLORS.primary, borderWidth: 3, borderColor: palette.ink, boxShadow: "4px 4px 0px 0px #111111" },
+  tabText: { fontFamily: "Poppins_700Bold", fontSize: 13, color: COLORS.textMuted },
   tabTextActive: { color: COLORS.surface },
   tabContent: { marginTop: 24 },
-  
-  sectionTitle: { fontFamily: 'Poppins_900Black', fontSize: 18, color: COLORS.primary, marginBottom: 16, letterSpacing: -0.5 },
-  
+
+  sectionTitle: { fontFamily: "Silkscreen_700Bold", fontSize: 16, color: COLORS.primary, marginBottom: 16, letterSpacing: 0 },
+
   // Records
-  recordCard: { flexDirection: 'row', alignItems: 'center', gap: 16, backgroundColor: COLORS.surface, borderRadius: 20, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: COLORS.border, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.02, shadowRadius: 4 },
-  recordIconBox: { width: 52, height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  recordTitle: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 16, color: COLORS.textDark, marginBottom: 4 },
-  recordSub: { fontFamily: 'Urbanist_500Medium', fontSize: 13, color: COLORS.textMuted },
+  recordCard: { flexDirection: 'row', alignItems: 'center', gap: 16, backgroundColor: COLORS.surface, borderRadius: 0, padding: 16, marginBottom: 12, borderWidth: 3, borderColor: palette.ink, boxShadow: "4px 4px 0px 0px #111111" },
+  recordIconBox: { width: 52, height: 52, borderRadius: 0, alignItems: 'center', justifyContent: 'center' },
+  recordTitle: { fontFamily: "Poppins_700Bold", fontSize: 16, color: COLORS.textDark, marginBottom: 4 },
+  recordSub: { fontFamily: "Poppins_400Regular", fontSize: 13, color: COLORS.textMuted },
   recordDates: { alignItems: 'flex-end' },
-  recordDateLabel: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 10, color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
-  recordDateValue: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 13, color: COLORS.textDark },
-  
+  recordDateLabel: { fontFamily: "Poppins_700Bold", fontSize: 10, color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
+  recordDateValue: { fontFamily: "Poppins_700Bold", fontSize: 13, color: COLORS.textDark },
+
   emptyTab: { alignItems: 'center', paddingVertical: 40, gap: 12 },
-  emptyTabText: { fontFamily: 'Urbanist_600SemiBold', fontSize: 14, color: COLORS.textMuted, textAlign: 'center' },
-  
-  shelterCard: { flexDirection: 'row', alignItems: 'center', gap: 16, backgroundColor: COLORS.surface, borderRadius: 20, padding: 16, borderWidth: 1, borderColor: COLORS.border },
-  shelterName: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 16, color: COLORS.textDark },
-  shelterContact: { fontFamily: 'Urbanist_600SemiBold', fontSize: 13, color: COLORS.textMuted, marginTop: 4 },
-  callBtn: { width: 44, height: 44, borderRadius: 14, backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center' },
-  
+  emptyTabText: { fontFamily: "Poppins_700Bold", fontSize: 14, color: COLORS.textMuted, textAlign: 'center' },
+
+  shelterCard: { flexDirection: 'row', alignItems: 'center', gap: 16, backgroundColor: COLORS.surface, borderRadius: 0, padding: 16, borderWidth: 3, borderColor: palette.ink },
+  shelterName: { fontFamily: "Poppins_700Bold", fontSize: 16, color: COLORS.textDark },
+  shelterContact: { fontFamily: "Poppins_700Bold", fontSize: 13, color: COLORS.textMuted, marginTop: 4 },
+  callBtn: { width: 44, height: 44, borderRadius: 0, backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: palette.ink },
+
   // Tags
   healthSection: { marginTop: 32 },
   tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  tag: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.surface, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1, borderColor: COLORS.border },
-  tagText: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 12, color: COLORS.textDark, textTransform: 'uppercase', letterSpacing: 0.5 },
-  
+  tag: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.surface, borderRadius: 0, paddingHorizontal: 14, paddingVertical: 8, borderWidth: 3, borderColor: palette.ink },
+  tagText: { fontFamily: "Poppins_700Bold", fontSize: 12, color: COLORS.textDark, textTransform: 'uppercase', letterSpacing: 0.5 },
+
   // Action Bar
-  bottomBar: { position: 'absolute', bottom: 0, left: 0, right: 0, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 24, paddingVertical: 16, backgroundColor: COLORS.surface, borderTopWidth: 1, borderTopColor: COLORS.border },
-  secondaryBtn: { width: 60, height: 60, alignItems: 'center', justifyContent: 'center', borderRadius: 16, backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
-  primaryBtn: { flex: 1, height: 60, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderRadius: 16, backgroundColor: COLORS.primary, shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.2, shadowRadius: 12, elevation: 5 },
-  primaryBtnText: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 16, color: COLORS.surface, letterSpacing: -0.3 },
+  bottomBar: { position: 'absolute', bottom: 0, left: 0, right: 0, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 24, paddingVertical: 16, backgroundColor: COLORS.surface, borderTopWidth: 3, borderTopColor: palette.ink },
+  secondaryBtn: { width: 60, height: 60, alignItems: 'center', justifyContent: 'center', borderRadius: 0, backgroundColor: COLORS.surface, borderWidth: 3, borderColor: palette.ink, boxShadow: "4px 4px 0px 0px #111111" },
+  primaryBtn: { flex: 1, height: 60, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderRadius: 0, backgroundColor: COLORS.primary, borderWidth: 3, borderColor: palette.ink, boxShadow: "4px 4px 0px 0px #111111" },
+  primaryBtnText: { fontFamily: "Silkscreen_700Bold", fontSize: 14, color: COLORS.surface, letterSpacing: 0 },
 
   // Modal
   modalContainer: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,23,31,0.6)' },
-  modalContent: { backgroundColor: COLORS.surface, borderTopLeftRadius: 32, borderTopRightRadius: 32, padding: 24, maxHeight: '85%' },
+  modalContent: { backgroundColor: COLORS.surface, borderTopLeftRadius: 0, borderTopRightRadius: 0, padding: 24, maxHeight: '85%', borderWidth: 3, borderColor: palette.ink },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  modalTitle: { fontFamily: 'Poppins_900Black', fontSize: 24, color: COLORS.primary, letterSpacing: -0.5 },
-  modalCloseBtn: { padding: 8, backgroundColor: COLORS.surface, borderRadius: 999, borderWidth: 1, borderColor: COLORS.border },
-  modalSubtitle: { fontFamily: 'Urbanist_600SemiBold', fontSize: 14, color: COLORS.textMuted, marginBottom: 24, lineHeight: 22 },
-  inputLabel: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 14, color: COLORS.textDark, marginBottom: 12, marginTop: 8 },
+  modalTitle: { fontFamily: "Silkscreen_700Bold", fontSize: 19, color: COLORS.primary, letterSpacing: 0 },
+  modalCloseBtn: { padding: 8, backgroundColor: COLORS.surface, borderRadius: 0, borderWidth: 3, borderColor: palette.ink },
+  modalSubtitle: { fontFamily: "Poppins_700Bold", fontSize: 14, color: COLORS.textMuted, marginBottom: 24, lineHeight: 22 },
+  inputLabel: { fontFamily: "Poppins_700Bold", fontSize: 14, color: COLORS.textDark, marginBottom: 12, marginTop: 8 },
   pillRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 20 },
-  pill: { paddingVertical: 12, paddingHorizontal: 16, borderRadius: 12, borderWidth: 1, borderColor: COLORS.border, backgroundColor: COLORS.inputFill },
-  pillActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-  pillText: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 13, color: COLORS.textMuted },
+  pill: { paddingVertical: 12, paddingHorizontal: 16, borderRadius: 0, borderWidth: 3, borderColor: palette.ink, backgroundColor: COLORS.inputFill },
+  pillActive: { backgroundColor: COLORS.primary, borderColor: palette.ink },
+  pillText: { fontFamily: "Poppins_700Bold", fontSize: 13, color: COLORS.textMuted },
   pillTextActive: { color: COLORS.surface },
-  textArea: { backgroundColor: COLORS.inputFill, borderRadius: 16, padding: 16, fontFamily: 'Urbanist_600SemiBold', fontSize: 14, color: COLORS.textDark, minHeight: 120, borderWidth: 1, borderColor: COLORS.border, marginBottom: 32 },
-  submitAppBtn: { backgroundColor: COLORS.primary, borderRadius: 16, paddingVertical: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.2, shadowRadius: 12, elevation: 5 },
-  submitAppText: { fontFamily: 'Urbanist_800ExtraBold', color: COLORS.surface, fontSize: 16, letterSpacing: -0.3 },
+  textArea: { backgroundColor: COLORS.inputFill, borderRadius: 0, padding: 16, fontFamily: "Poppins_700Bold", fontSize: 14, color: COLORS.textDark, minHeight: 120, borderWidth: 3, borderColor: palette.ink, marginBottom: 32 },
+  submitAppBtn: { backgroundColor: COLORS.primary, borderRadius: 0, paddingVertical: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, borderWidth: 3, borderColor: palette.ink, boxShadow: "4px 4px 0px 0px #111111" },
+  submitAppText: { fontFamily: "Silkscreen_700Bold", color: COLORS.surface, fontSize: 14, letterSpacing: 0 },
 });

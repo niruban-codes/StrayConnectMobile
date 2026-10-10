@@ -1,10 +1,14 @@
+import PhotoPreview from '../components/PhotoPreview';
+import { COLORS as ARCADE_COLORS, palette } from '../design/theme';
 import { upcomingEvents as filterUpcomingEvents, eventStart } from '../utils/eventDate';
 import { useFeedStatus } from '../hooks/useFeedStatus';
 import FeedError from '../components/FeedError';
+import ArcadeButton from '../components/ArcadeButton';
+import PetAvatar from '../components/PetAvatar';
 // src/screens/HomeScreen.js
 import React, { useEffect, useState, useRef } from 'react';
 import {
-  View, Text, TouchableOpacity, StyleSheet, Image, 
+  View, Text, TouchableOpacity, StyleSheet, Image,
   FlatList, StatusBar, Dimensions, Animated
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,23 +18,9 @@ import { collection, query, limit, onSnapshot, where } from 'firebase/firestore'
 
 const { width } = Dimensions.get('window');
 
-// 🎨 UPDATED "MONITO" COLOR PALETTE
-const COLORS = {
-  primary: '#003459',       // Dark Blue
-  background: '#F7DBA7',    // Mon Yellow
-  surface: '#FFFFFF',       // Pure White
-  surfaceOff: '#FDFDFD',    // Neutral 00
-  border: '#EBEEEF',        // Neutral 10
-  textDark: '#00171F',      // Neutral 100
-  textMuted: '#52616B',     
-  
-  pinkRed: '#FF564F',
-  greenLight: '#34C759',
-  orangeShine: '#FF912C',
-  blueSea: '#00A7E7',
-};
+const COLORS = { ...ARCADE_COLORS, background: palette.yellow };
 
-const HEADER_HEIGHT = 60; 
+const HEADER_HEIGHT = 60;
 
 export default function HomeScreen({ navigation }) {
   const insets = useSafeAreaInsets();
@@ -59,7 +49,7 @@ export default function HomeScreen({ navigation }) {
 
   // 🚀 SCROLLING HEADER ANIMATION VALUES
   const scrollY = useRef(new Animated.Value(0)).current;
-  
+
   const clampedScrollY = Animated.diffClamp(
     scrollY.interpolate({
       inputRange: [0, 10000],
@@ -72,7 +62,7 @@ export default function HomeScreen({ navigation }) {
 
   const headerTranslateY = clampedScrollY.interpolate({
     inputRange: [0, HEADER_HEIGHT],
-    outputRange: [0, -HEADER_HEIGHT], 
+    outputRange: [0, -HEADER_HEIGHT],
     extrapolate: 'clamp',
   });
 
@@ -106,7 +96,7 @@ export default function HomeScreen({ navigation }) {
       collection(db, 'events'),
       where('status', '==', 'approved')
     );
-    
+
     const unsubEvents = onSnapshot(qEvents, (snapshot) => {
       setEvents(snapshot.docs.map(item => ({ ...item.data(), id: item.id })));
     }, failFeed);
@@ -119,7 +109,7 @@ export default function HomeScreen({ navigation }) {
       case 'adopted':   return { bg: '#E8F5E9', text: COLORS.greenLight };
       case 'sheltered': return { bg: '#E1F5FE', text: COLORS.blueSea };
       case 'lost':      return { bg: '#FFEBEE', text: COLORS.pinkRed };
-      default:          return { bg: '#FFF3E0', text: COLORS.orangeShine }; 
+      default:          return { bg: '#FFF3E0', text: COLORS.orangeShine };
     }
   };
 
@@ -129,11 +119,7 @@ export default function HomeScreen({ navigation }) {
     <View style={styles.safe}>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent={true} />
 
-      {/* 🚀 CUSTOM TOPOGRAPHIC BACKGROUND */}
-      <Image 
-        source={require('../../assets/images/app-bg.png')} 
-        style={styles.bgPattern} 
-      />
+
 
       {/* 🚀 LAYER 1: SOLID BACKGROUND FOR STATUS BAR */}
       <View style={{
@@ -141,23 +127,23 @@ export default function HomeScreen({ navigation }) {
         top: 0, left: 0, right: 0,
         height: insets.top,
         backgroundColor: COLORS.background,
-        zIndex: 101 
+        zIndex: 101
       }} />
 
       {/* 🚀 LAYER 2: ANIMATED HEADER */}
       <Animated.View style={[
-        styles.header, 
-        { 
-          top: insets.top, 
-          height: HEADER_HEIGHT, 
-          transform: [{ translateY: headerTranslateY }] 
+        styles.header,
+        {
+          top: insets.top,
+          height: HEADER_HEIGHT,
+          transform: [{ translateY: headerTranslateY }]
         }
       ]}>
         <View style={styles.headerLeft}>
           {/* 🚀 CUSTOM APP LOGO */}
-          <Image 
-            source={require('../../assets/images/sc-logo.png')} 
-            style={styles.headerLogoIcon} 
+          <Image
+            source={require('../../assets/images/sc-logo.png')}
+            style={styles.headerLogoIcon}
           />
           <Text style={styles.logo}>StrayConnect</Text>
         </View>
@@ -167,12 +153,12 @@ export default function HomeScreen({ navigation }) {
         </TouchableOpacity>
       </Animated.View>
 
-      <Animated.ScrollView 
-        style={styles.scroll} 
+      <Animated.ScrollView
+        style={styles.scroll}
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingTop: HEADER_HEIGHT + insets.top + 10 } 
-        ]} 
+          { paddingTop: HEADER_HEIGHT + insets.top + 10 }
+        ]}
         showsVerticalScrollIndicator={false}
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
@@ -180,46 +166,31 @@ export default function HomeScreen({ navigation }) {
         )}
         scrollEventThrottle={16}
       >
-        
+
         <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
-          
+
           {/* 🌟 GREETING */}
           <View style={styles.section}>
-            <Text style={styles.greeting}>One More Friend</Text>
-            <Text style={styles.subGreeting}>Thousands More Fun! <Text style={{color: COLORS.pinkRed}}>✦</Text></Text>
+            <Text style={styles.sectionSubtitle}>YOUR DAILY DOSE OF DOING GOOD</Text>
+            <Text style={styles.greeting}>SMALL PAWS.{'\n'}BIG MISSION.</Text>
             <Text style={styles.greetingDesc}>
-              Having a pet means you have more joy, a new friend, a happy person who will always be with you.
+              A safer world for every stray. Start with one small act of care.
             </Text>
           </View>
 
-          {/* 🌟 QUICK ACTIONS */}
-          <View style={styles.quickActions}>
-            <TouchableOpacity 
-              style={[styles.actionBtn, { backgroundColor: COLORS.surface }]} 
-              activeOpacity={0.8} 
-              onPress={() => navigation.navigate('Report')}
-            >
-              <MaterialCommunityIcons name="camera-plus" size={20} color={COLORS.primary} />
-              <Text style={[styles.actionBtnText, { color: COLORS.primary }]}>Report Stray</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={[styles.actionBtn, { backgroundColor: COLORS.primary }]} 
-              activeOpacity={0.8} 
-              onPress={() => navigation.navigate('Browse')}
-            >
-              <Text style={[styles.actionBtnText, { color: COLORS.surface }]}>Explore Now</Text>
-              <MaterialCommunityIcons name="chevron-right-circle" size={20} color={COLORS.surface} />
-            </TouchableOpacity>
+          <View style={styles.petConsole}>
+            <View style={styles.consoleTop}><Text style={styles.consoleLabel}>COMPANION / 01</Text><Text style={styles.consoleLabel}>♥ ♥ ♥</Text></View>
+            <View style={styles.petStage}><PetAvatar size={190} /><View style={styles.petCaption}><Text style={styles.consoleLabel}>GOOD DOG.{'\n'}GREAT CAUSE.</Text></View></View>
+            <View style={styles.consoleBottom}><Text style={styles.consoleLabel}>FIND. HELP. CONNECT.</Text></View>
           </View>
-
-
+          <ArcadeButton color={palette.coral} style={{ marginBottom: 16 }} onPress={() => navigation.navigate('Report')}>REPORT SOS →</ArcadeButton>
+          <ArcadeButton color={palette.mint} style={{ marginBottom: 28 }} onPress={() => navigation.navigate('Browse')}>MEET THE PETS →</ArcadeButton>
           {/* 🌟 EXCITING EVENTS */}
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionSubtitle}>What's new?</Text>
-            <Text style={styles.sectionTitle}>Exciting Events</Text>
+            <Text style={styles.sectionSubtitle}>01 / SHOW UP FOR GOOD</Text>
+            <Text style={styles.sectionTitle}>COMMUNITY EVENTS</Text>
           </View>
-          
+
           {upcomingEvents.length === 0 ? (
             <View style={styles.emptyState}>
               <MaterialCommunityIcons name="calendar-blank" size={40} color={COLORS.textMuted} />
@@ -241,7 +212,7 @@ export default function HomeScreen({ navigation }) {
                   <TouchableOpacity style={styles.card} activeOpacity={0.9} onPress={() => navigation.navigate('EventDetail', { event: item })}>
                     <View style={styles.cardImageContainer}>
                       {item.imageUrl ? (
-                        <Image source={{ uri: item.imageUrl }} style={styles.cardImage} />
+                        <PhotoPreview uri={item.imageUrl} style={styles.cardImage} />
                       ) : (
                         <View style={[styles.cardImage, styles.placeholderBg]}>
                           <MaterialCommunityIcons name="calendar-star" size={32} color={COLORS.border} />
@@ -252,7 +223,7 @@ export default function HomeScreen({ navigation }) {
                         <Text style={styles.dateDay}>{day}</Text>
                       </View>
                     </View>
-                    
+
                     <View style={styles.cardInfo}>
                       <Text style={styles.cardTitle} numberOfLines={1}>{item.title}</Text>
                       <Text style={styles.cardSub} numberOfLines={1}>
@@ -267,10 +238,10 @@ export default function HomeScreen({ navigation }) {
 
           {/* 🌟 RECENTLY RESCUED */}
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionSubtitle}>Who's new?</Text>
-            <Text style={styles.sectionTitle}>Take A Look At Our Pets</Text>
+            <Text style={styles.sectionSubtitle}>02 / THE PAW PARADE</Text>
+            <Text style={styles.sectionTitle}>MEET YOUR NEXT FRIEND</Text>
           </View>
-          
+
           {recentAnimals.length === 0 ? (
             <View style={styles.emptyState}>
               <MaterialCommunityIcons name="paw-outline" size={40} color={COLORS.textMuted} />
@@ -289,22 +260,21 @@ export default function HomeScreen({ navigation }) {
                   <TouchableOpacity style={styles.card} activeOpacity={0.9} onPress={() => navigation.navigate('Browse')}>
                     <View style={styles.cardImageContainer}>
                       {item.imageUrl ? (
-                        <Image source={{ uri: item.imageUrl }} style={styles.cardImage} />
+                        <PhotoPreview uri={item.imageUrl} style={styles.cardImage} />
                       ) : (
                         <View style={[styles.cardImage, styles.placeholderBg]}>
                           <MaterialCommunityIcons name="paw" size={32} color={COLORS.border} />
                         </View>
                       )}
                     </View>
-                    
+
                     <View style={styles.cardInfo}>
                       <Text style={styles.cardTitle} numberOfLines={1}>{item.name || 'Unnamed Pet'}</Text>
                       <View style={styles.cardDetailsRow}>
-                        <Text style={styles.cardDetailText}>Gene: <Text style={{fontFamily: 'Urbanist_800ExtraBold', color: COLORS.textMuted}}>{item.species}</Text></Text>
-                        <Text style={styles.cardDetailDot}>•</Text>
-                        <Text style={styles.cardDetailText}>Loc: <Text style={{fontFamily: 'Urbanist_800ExtraBold', color: COLORS.textMuted}}>{item.location || 'Unknown'}</Text></Text>
+                        <Text style={styles.cardDetailText}>Species: <Text style={{fontFamily: 'Poppins_700Bold', color: COLORS.textMuted}}>{item.species}</Text></Text>
+                        <Text style={styles.cardDetailText} numberOfLines={2}>{item.location || 'Location unknown'}</Text>
                       </View>
-                      
+
                       <View style={[styles.statusBadge, { backgroundColor: sc.bg }]}>
                         <Text style={[styles.statusText, { color: sc.text }]}>{item.status}</Text>
                       </View>
@@ -322,13 +292,13 @@ export default function HomeScreen({ navigation }) {
           </View>
 
           <View style={styles.communityActions}>
-            <TouchableOpacity style={styles.listCard} activeOpacity={0.8}>
+            <TouchableOpacity style={styles.listCard} activeOpacity={0.8} onPress={() => navigation.navigate('SOS Feed')}>
               <View style={[styles.listIconBg, { backgroundColor: '#E1F5FE' }]}>
                 <MaterialCommunityIcons name="map-marker-radius" size={24} color={COLORS.blueSea} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.listTitle}>Find Help Near You</Text>
-                <Text style={styles.listSub}>Locate vets and shelters</Text>
+                <Text style={styles.listTitle}>Local rescue alerts</Text>
+                <Text style={styles.listSub}>See animals who need help</Text>
               </View>
               <MaterialCommunityIcons name="chevron-right" size={24} color={COLORS.primary} />
             </TouchableOpacity>
@@ -353,89 +323,73 @@ export default function HomeScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
+  petConsole: { borderWidth: 3, borderColor: palette.ink, backgroundColor: palette.purple, boxShadow: '5px 5px 0px 0px #111111', marginBottom: 24 },
+  consoleTop: { flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 3, borderColor: palette.ink, padding: 12, backgroundColor: palette.paper },
+  consoleLabel: { fontFamily: 'Silkscreen_700Bold', fontSize: 11, color: palette.ink, lineHeight: 18 },
+  petStage: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', paddingVertical: 8 },
+  petCaption: { flexShrink: 1, padding: 8 },
+  consoleBottom: { borderTopWidth: 3, borderColor: palette.ink, padding: 10, alignItems: 'center', backgroundColor: palette.paper },
   safe: { flex: 1, backgroundColor: COLORS.background },
-  
-  bgPattern: {
-    position: 'absolute',
-    width: '100%',
-    height: '100%',
-    opacity: 0.15,
-    resizeMode: 'cover',
-  },
 
-  header: { 
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center', 
-    paddingHorizontal: 20, 
-    backgroundColor: COLORS.background, 
-    zIndex: 100 
-  },
+
+  header: { position: 'absolute', left: 0, right: 0, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, backgroundColor: COLORS.background, zIndex: 100, borderBottomWidth: 3, borderBottomColor: palette.ink },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  
-  headerLogoIcon: { 
-    width: 28,  
-    height: 28, 
-    resizeMode: 'contain',
-    borderRadius: 6, 
-  },
-  
-  logo: { fontFamily: 'Poppins_900Black', fontSize: 22, color: COLORS.primary, letterSpacing: -0.5 },
+
+  headerLogoIcon: { width: 28, height: 28, resizeMode: 'contain', borderRadius: 0 },
+
+  logo: { fontFamily: "Silkscreen_700Bold", fontSize: 18, color: COLORS.primary, letterSpacing: 0 },
   notifBtn: { position: 'relative', padding: 8 },
-  notifBadge: { position: 'absolute', top: 0, right: 0, minWidth: 18, height: 18, paddingHorizontal: 4, borderRadius: 9, backgroundColor: COLORS.pinkRed, alignItems: 'center', justifyContent: 'center' },
+  notifBadge: { position: 'absolute', top: 0, right: 0, minWidth: 18, height: 18, paddingHorizontal: 4, borderRadius: 0, backgroundColor: COLORS.pinkRed, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: palette.ink },
   notifBadgeText: { color: '#fff', fontSize: 10, fontWeight: '800' },
-  notifDot: { position: 'absolute', top: 8, right: 10, width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.pinkRed, borderWidth: 1.5, borderColor: COLORS.background },
-  
+  notifDot: { position: 'absolute', top: 8, right: 10, width: 8, height: 8, borderRadius: 0, backgroundColor: COLORS.pinkRed, borderWidth: 3, borderColor: palette.ink },
+
   scroll: { flex: 1 },
   scrollContent: { paddingHorizontal: 20, paddingBottom: 40 },
-  
-  section: { marginBottom: 24 },
-  greeting: { fontFamily: 'Poppins_900Black', fontSize: 36, color: COLORS.primary, letterSpacing: -1, lineHeight: 40 },
-  subGreeting: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 22, color: COLORS.primary, marginTop: 4 },
-  greetingDesc: { fontFamily: 'Urbanist_500Medium', fontSize: 13, color: COLORS.textMuted, marginTop: 12, lineHeight: 20, paddingRight: 20 },
-  
-  quickActions: { flexDirection: 'row', gap: 12, marginBottom: 28 },
-  actionBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, borderRadius: 999, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
-  actionBtnText: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 14, letterSpacing: 0.5 },
 
-  emergencyBanner: { backgroundColor: '#FFF', borderRadius: 20, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32, borderWidth: 1, borderColor: '#FFE4E1', shadowColor: COLORS.pinkRed, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.15, shadowRadius: 16, elevation: 4 },
+  section: { marginBottom: 24 },
+  greeting: { fontFamily: "Silkscreen_700Bold", fontSize: 29, color: COLORS.primary, letterSpacing: 0, lineHeight: 40 },
+  subGreeting: { fontFamily: "Poppins_700Bold", fontSize: 22, color: COLORS.primary, marginTop: 4 },
+  greetingDesc: { fontFamily: "Poppins_400Regular", fontSize: 13, color: COLORS.textMuted, marginTop: 12, lineHeight: 20, paddingRight: 20 },
+
+  quickActions: { flexDirection: 'row', gap: 12, marginBottom: 28 },
+  actionBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, borderRadius: 0, boxShadow: "4px 4px 0px 0px #111111" },
+  actionBtnText: { fontFamily: "Poppins_700Bold", fontSize: 14, letterSpacing: 0.5 },
+
+  emergencyBanner: { backgroundColor: '#FFF', borderRadius: 0, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32, borderWidth: 3, borderColor: palette.ink, boxShadow: "4px 4px 0px 0px #111111" },
   emergencyLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
-  emergencyIconBg: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#FFEBEE', alignItems: 'center', justifyContent: 'center' },
-  emergencyTitle: { fontFamily: 'Urbanist_800ExtraBold', color: COLORS.primary, fontSize: 15 },
-  emergencySubtitle: { fontFamily: 'Urbanist_500Medium', color: COLORS.textMuted, fontSize: 12, marginTop: 2 },
-  
+  emergencyIconBg: { width: 44, height: 44, borderRadius: 0, backgroundColor: '#FFEBEE', alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: palette.ink },
+  emergencyTitle: { fontFamily: "Poppins_700Bold", color: COLORS.primary, fontSize: 15 },
+  emergencySubtitle: { fontFamily: "Poppins_400Regular", color: COLORS.textMuted, fontSize: 12, marginTop: 2 },
+
   sectionHeader: { marginBottom: 16 },
-  sectionSubtitle: { fontFamily: 'Urbanist_600SemiBold', fontSize: 13, color: COLORS.textMuted, marginBottom: 2 },
-  sectionTitle: { fontFamily: 'Poppins_900Black', fontSize: 20, color: COLORS.primary, letterSpacing: -0.5 },
-  
-  emptyState: { alignItems: 'center', paddingVertical: 32, gap: 8, marginBottom: 24, backgroundColor: 'rgba(255,255,255,0.7)', borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.9)' },
-  emptyText: { fontFamily: 'Urbanist_600SemiBold', color: COLORS.textMuted, fontSize: 13 },
-  
-  card: { width: 180, backgroundColor: COLORS.surface, borderRadius: 20, marginRight: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 3 },
+  sectionSubtitle: { fontFamily: "Poppins_700Bold", fontSize: 13, color: COLORS.textMuted, marginBottom: 2 },
+  sectionTitle: { fontFamily: "Silkscreen_700Bold", fontSize: 16, color: COLORS.primary, letterSpacing: 0 },
+
+  emptyState: { alignItems: 'center', paddingVertical: 32, gap: 8, marginBottom: 24, backgroundColor: palette.paper, borderRadius: 0, borderWidth: 3, borderColor: palette.ink },
+  emptyText: { fontFamily: "Poppins_700Bold", color: COLORS.textMuted, fontSize: 13 },
+
+  card: { width: 180, backgroundColor: COLORS.surface, borderRadius: 0, marginRight: 16, borderWidth: 3, borderColor: palette.ink, boxShadow: "4px 4px 0px 0px #111111" },
   cardImageContainer: { width: '100%', height: 160, padding: 8 },
-  cardImage: { width: '100%', height: '100%', borderRadius: 12, resizeMode: 'cover' },
+  cardImage: { width: '100%', height: '100%', borderRadius: 0, resizeMode: 'cover' },
   placeholderBg: { backgroundColor: COLORS.surfaceOff, alignItems: 'center', justifyContent: 'center' },
-  
+
   cardInfo: { padding: 12, paddingTop: 4 },
-  cardTitle: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 15, color: COLORS.primary, marginBottom: 6 },
-  cardSub: { fontFamily: 'Urbanist_600SemiBold', fontSize: 11, color: COLORS.textMuted },
-  
-  cardDetailsRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
-  cardDetailText: { fontFamily: 'Urbanist_500Medium', fontSize: 10, color: COLORS.textMuted },
+  cardTitle: { fontFamily: "Poppins_700Bold", fontSize: 15, color: COLORS.primary, marginBottom: 6 },
+  cardSub: { fontFamily: "Poppins_700Bold", fontSize: 11, color: COLORS.textMuted },
+
+  cardDetailsRow: { gap: 3, marginBottom: 10 },
+  cardDetailText: { fontFamily: "Poppins_400Regular", fontSize: 11, color: COLORS.textMuted },
   cardDetailDot: { fontSize: 10, color: COLORS.border, marginHorizontal: 6 },
-  statusBadge: { alignSelf: 'flex-start', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 },
-  statusText: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 10, textTransform: 'capitalize' },
-  
-  dateBadge: { position: 'absolute', top: 16, right: 16, backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, alignItems: 'center' },
-  dateMonth: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 9, color: COLORS.pinkRed, textTransform: 'uppercase' },
-  dateDay: { fontFamily: 'Poppins_900Black', fontSize: 14, color: COLORS.primary },
+  statusBadge: { alignSelf: 'flex-start', borderRadius: 0, paddingHorizontal: 8, paddingVertical: 4 },
+  statusText: { fontFamily: "Poppins_700Bold", fontSize: 10, textTransform: 'capitalize' },
+
+  dateBadge: { position: 'absolute', top: 16, right: 16, backgroundColor: palette.paper, borderRadius: 0, paddingHorizontal: 8, paddingVertical: 4, alignItems: 'center', borderWidth: 3, borderColor: palette.ink },
+  dateMonth: { fontFamily: "Poppins_700Bold", fontSize: 9, color: COLORS.pinkRed, textTransform: 'uppercase' },
+  dateDay: { fontFamily: "Silkscreen_700Bold", fontSize: 14, color: COLORS.primary, letterSpacing: 0 },
 
   communityActions: { gap: 12 },
-  listCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.8)', borderRadius: 20, padding: 16, gap: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.04, shadowRadius: 8, elevation: 2 },
-  listIconBg: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  listTitle: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 15, color: COLORS.primary, letterSpacing: -0.3 },
-  listSub: { fontFamily: 'Urbanist_600SemiBold', fontSize: 12, color: COLORS.textMuted, marginTop: 2 },
+  listCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: palette.paper, borderRadius: 0, padding: 16, gap: 16, borderWidth: 3, borderColor: palette.ink, boxShadow: "4px 4px 0px 0px #111111" },
+  listIconBg: { width: 48, height: 48, borderRadius: 0, alignItems: 'center', justifyContent: 'center' },
+  listTitle: { fontFamily: "Poppins_700Bold", fontSize: 15, color: COLORS.primary, letterSpacing: -0.3 },
+  listSub: { fontFamily: "Poppins_700Bold", fontSize: 12, color: COLORS.textMuted, marginTop: 2 },
 });

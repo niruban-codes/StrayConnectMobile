@@ -1,10 +1,11 @@
+import { COLORS as ARCADE_COLORS, palette } from '../design/theme';
 // src/screens/SignupScreen.js
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  View, Text, TextInput, TouchableOpacity, StyleSheet, 
+import {
+  View, Text, TextInput, TouchableOpacity, StyleSheet,
   KeyboardAvoidingView, Platform, ActivityIndicator, Alert, ScrollView, Animated, StatusBar, Image
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context'; 
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { createUserWithEmailAndPassword, updateProfile, sendEmailVerification, GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
@@ -12,23 +13,15 @@ import { ensureUserProfile } from '../services/userProfile';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { auth, db } from '../../firebase';
 
-const COLORS = {
-  primary: '#003459',       // Dark Blue
-  background: '#F7DBA7',    // Mon Yellow - MAIN BACKGROUND
-  surface: '#FFFFFF',       // Pure White
-  border: 'rgba(0, 52, 89, 0.1)', 
-  textDark: '#00171F',      
-  textMuted: '#52616B',     
-  error: '#FF564F',         
-};
+const COLORS = { ...ARCADE_COLORS, background: palette.yellow };
 
 export default function SignupScreen({ navigation }) {
-  const insets = useSafeAreaInsets(); 
+  const insets = useSafeAreaInsets();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  
+
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -42,7 +35,7 @@ export default function SignupScreen({ navigation }) {
   useEffect(() => {
     // Initialize Google Sign-In
     GoogleSignin.configure({
-      webClientId: '447208299459-ec7nftghokahr5ngt3odcf0sav1fqqni.apps.googleusercontent.com', 
+      webClientId: '447208299459-ec7nftghokahr5ngt3odcf0sav1fqqni.apps.googleusercontent.com',
       offlineAccess: true,
     });
 
@@ -82,14 +75,14 @@ export default function SignupScreen({ navigation }) {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
-      
+
       await updateProfile(user, { displayName: name });
-      
+
       await setDoc(doc(db, 'users', user.uid), {
         name: name,
         email: email,
         role: 'public',
-        isEmailVerified: false, 
+        isEmailVerified: false,
         createdAt: new Date()
       });
 
@@ -112,7 +105,7 @@ export default function SignupScreen({ navigation }) {
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
       const response = await GoogleSignin.signIn();
       const idToken = response.idToken || response.data?.idToken;
-      
+
       if (!idToken) throw new Error('No ID Token recovered from Google.');
 
       const credential = GoogleAuthProvider.credential(idToken);
@@ -132,27 +125,24 @@ export default function SignupScreen({ navigation }) {
   return (
     <View style={styles.safe}>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent={true} />
-      
-      <Image 
-        source={require('../../assets/images/app-bg.png')} 
-        style={styles.bgPattern} 
-      />
-      
+
+
+
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
-        <TouchableOpacity 
-          style={[styles.backBtn, { top: Math.max(insets.top + 16, 16) }]} 
+        <TouchableOpacity
+          style={[styles.backBtn, { top: Math.max(insets.top + 16, 16) }]}
           onPress={() => navigation.goBack()}
         >
           <MaterialCommunityIcons name="arrow-left" size={24} color={COLORS.primary} />
         </TouchableOpacity>
 
-        <ScrollView 
-          showsVerticalScrollIndicator={false} 
+        <ScrollView
+          showsVerticalScrollIndicator={false}
           contentContainerStyle={[
-            styles.scrollContent, 
-            { 
+            styles.scrollContent,
+            {
               paddingTop: insets.top + 80,
-              paddingBottom: Math.max(insets.bottom + 20, 40) 
+              paddingBottom: Math.max(insets.bottom + 20, 40)
             }
           ]}
         >
@@ -172,12 +162,12 @@ export default function SignupScreen({ navigation }) {
                 <Text style={styles.label}>Full Name</Text>
                 <View style={styles.inputContainer}>
                   <MaterialCommunityIcons name="account-outline" size={20} color={COLORS.textMuted} />
-                  <TextInput 
-                    style={styles.input} 
-                    placeholder="e.g. Kasun Perera" 
+                  <TextInput
+                    style={styles.input}
+                    placeholder="e.g. Kasun Perera"
                     placeholderTextColor={COLORS.textMuted}
-                    value={name} 
-                    onChangeText={setName} 
+                    value={name}
+                    onChangeText={setName}
                   />
                 </View>
               </View>
@@ -186,14 +176,14 @@ export default function SignupScreen({ navigation }) {
                 <Text style={styles.label}>Email Address</Text>
                 <View style={styles.inputContainer}>
                   <MaterialCommunityIcons name="email-outline" size={20} color={COLORS.textMuted} />
-                  <TextInput 
-                    style={styles.input} 
-                    placeholder="name@example.com" 
+                  <TextInput
+                    style={styles.input}
+                    placeholder="name@example.com"
                     placeholderTextColor={COLORS.textMuted}
-                    autoCapitalize="none" 
-                    keyboardType="email-address" 
-                    value={email} 
-                    onChangeText={setEmail} 
+                    autoCapitalize="none"
+                    keyboardType="email-address"
+                    value={email}
+                    onChangeText={setEmail}
                   />
                 </View>
               </View>
@@ -202,19 +192,19 @@ export default function SignupScreen({ navigation }) {
                 <Text style={styles.label}>Password</Text>
                 <View style={[styles.inputContainer, passwordError ? styles.inputError : null]}>
                   <MaterialCommunityIcons name="lock-outline" size={20} color={COLORS.textMuted} />
-                  <TextInput 
-                    style={styles.input} 
-                    placeholder="Create a strong password" 
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Create a strong password"
                     placeholderTextColor={COLORS.textMuted}
-                    secureTextEntry={!showPassword} 
-                    value={password} 
-                    onChangeText={setPassword} 
+                    secureTextEntry={!showPassword}
+                    value={password}
+                    onChangeText={setPassword}
                   />
                   <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                    <MaterialCommunityIcons 
-                      name={showPassword ? "eye-outline" : "eye-off-outline"} 
-                      size={20} 
-                      color={COLORS.textMuted} 
+                    <MaterialCommunityIcons
+                      name={showPassword ? "eye-outline" : "eye-off-outline"}
+                      size={20}
+                      color={COLORS.textMuted}
                     />
                   </TouchableOpacity>
                 </View>
@@ -225,27 +215,27 @@ export default function SignupScreen({ navigation }) {
                 <Text style={styles.label}>Confirm Password</Text>
                 <View style={[styles.inputContainer, passwordError ? styles.inputError : null]}>
                   <MaterialCommunityIcons name="lock-check-outline" size={20} color={COLORS.textMuted} />
-                  <TextInput 
-                    style={styles.input} 
-                    placeholder="Type password again" 
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Type password again"
                     placeholderTextColor={COLORS.textMuted}
-                    secureTextEntry={!showConfirmPassword} 
-                    value={confirmPassword} 
-                    onChangeText={setConfirmPassword} 
+                    secureTextEntry={!showConfirmPassword}
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
                   />
                   <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
-                    <MaterialCommunityIcons 
-                      name={showConfirmPassword ? "eye-outline" : "eye-off-outline"} 
-                      size={20} 
-                      color={COLORS.textMuted} 
+                    <MaterialCommunityIcons
+                      name={showConfirmPassword ? "eye-outline" : "eye-off-outline"}
+                      size={20}
+                      color={COLORS.textMuted}
                     />
                   </TouchableOpacity>
                 </View>
               </View>
 
-              <TouchableOpacity 
-                style={[styles.submitBtn, (loading || googleLoading) && styles.submitBtnDisabled]} 
-                onPress={handleSignup} 
+              <TouchableOpacity
+                style={[styles.submitBtn, (loading || googleLoading) && styles.submitBtnDisabled]}
+                onPress={handleSignup}
                 disabled={loading || googleLoading}
                 activeOpacity={0.8}
               >
@@ -264,9 +254,9 @@ export default function SignupScreen({ navigation }) {
               </View>
 
               {/* 🚀 GOOGLE BUTTON */}
-              <TouchableOpacity 
-                style={styles.googleBtn} 
-                onPress={handleGoogleSignUp} 
+              <TouchableOpacity
+                style={styles.googleBtn}
+                onPress={handleGoogleSignUp}
                 disabled={loading || googleLoading}
                 activeOpacity={0.8}
               >
@@ -274,7 +264,7 @@ export default function SignupScreen({ navigation }) {
                   <ActivityIndicator color={COLORS.primary} />
                 ) : (
                   <View style={styles.googleBtnContent}>
-                    <MaterialCommunityIcons name="google" size={20} color={COLORS.primary} style={styles.googleIcon} />
+                    <Image source={require('../../assets/images/google-g.png')} style={styles.googleIcon} resizeMode="contain" accessible={false} />
                     <Text style={styles.googleBtnText}>Continue with Google</Text>
                   </View>
                 )}
@@ -292,32 +282,31 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: COLORS.background },
   container: { flex: 1 },
   scrollContent: { flexGrow: 1, paddingHorizontal: 24 },
-  bgPattern: { position: 'absolute', width: '100%', height: '100%', opacity: 0.15, resizeMode: 'cover' },
-  backBtn: { position: 'absolute', left: 24, padding: 10, backgroundColor: 'rgba(255,255,255,0.7)', borderRadius: 14, borderWidth: 1, borderColor: COLORS.border, zIndex: 10 },
+  backBtn: { position: 'absolute', left: 24, padding: 10, backgroundColor: palette.paper, borderRadius: 0, borderWidth: 3, borderColor: palette.ink, zIndex: 10 },
   headerBox: { marginBottom: 32 },
   titleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 },
-  title: { flex: 1, fontFamily: 'Poppins_900Black', fontSize: 36, color: COLORS.primary, letterSpacing: -1, lineHeight: 40 },
-  iconBg: { width: 48, height: 48, borderRadius: 14, backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center', transform: [{ rotate: '10deg' }] }, 
-  subtitle: { fontFamily: 'Urbanist_600SemiBold', fontSize: 16, color: COLORS.primary, opacity: 0.8, lineHeight: 22 },
-  
+  title: { flex: 1, fontFamily: "Silkscreen_700Bold", fontSize: 29, color: COLORS.primary, letterSpacing: 0, lineHeight: 40 },
+  iconBg: { width: 48, height: 48, borderRadius: 0, backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center', transform: [{ rotate: '10deg' }], borderWidth: 3, borderColor: palette.ink },
+  subtitle: { fontFamily: "Poppins_700Bold", fontSize: 16, color: COLORS.primary, opacity: 0.8, lineHeight: 22 },
+
   form: { gap: 16 },
   inputWrapper: { gap: 6 },
-  label: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 14, color: COLORS.primary, marginLeft: 4, letterSpacing: -0.3 },
-  inputContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.surface, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 12, borderWidth: 1, borderColor: COLORS.border, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.03, shadowRadius: 8, elevation: 2 },
-  inputError: { borderColor: COLORS.error, borderWidth: 1.5 },
-  input: { flex: 1, marginLeft: 12, marginRight: 8, fontFamily: 'Urbanist_600SemiBold', fontSize: 15, color: COLORS.textDark, height: 36 }, 
-  errorText: { fontFamily: 'Urbanist_600SemiBold', color: COLORS.error, fontSize: 12, marginLeft: 4, marginTop: 2, lineHeight: 16 },
-  
-  submitBtn: { backgroundColor: COLORS.primary, borderRadius: 16, paddingVertical: 18, alignItems: 'center', marginTop: 8, shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.2, shadowRadius: 12, elevation: 5 },
+  label: { fontFamily: "Poppins_700Bold", fontSize: 14, color: COLORS.primary, marginLeft: 4, letterSpacing: -0.3 },
+  inputContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.surface, borderRadius: 0, paddingHorizontal: 16, paddingVertical: 12, borderWidth: 3, borderColor: palette.ink, boxShadow: "4px 4px 0px 0px #111111" },
+  inputError: { borderColor: palette.ink, borderWidth: 3 },
+  input: { flex: 1, minWidth: 0, marginLeft: 12, marginRight: 8, fontFamily: "Poppins_400Regular", fontSize: 15, color: COLORS.textDark, minHeight: 36, paddingHorizontal: 0, paddingVertical: 0, includeFontPadding: false, textAlignVertical: 'center' },
+  errorText: { fontFamily: "Poppins_700Bold", color: COLORS.error, fontSize: 12, marginLeft: 4, marginTop: 2, lineHeight: 16 },
+
+  submitBtn: { backgroundColor: COLORS.primary, borderRadius: 0, paddingVertical: 18, alignItems: 'center', marginTop: 8, borderWidth: 3, borderColor: palette.ink, boxShadow: "4px 4px 0px 0px #111111" },
   submitBtnDisabled: { opacity: 0.7 },
-  submitText: { fontFamily: 'Urbanist_800ExtraBold', color: COLORS.surface, fontSize: 16, letterSpacing: -0.3 },
+  submitText: { fontFamily: "Silkscreen_700Bold", color: COLORS.surface, fontSize: 14, letterSpacing: 0 },
 
   dividerContainer: { flexDirection: 'row', alignItems: 'center', marginVertical: 4 },
   dividerLine: { flex: 1, height: 1, backgroundColor: COLORS.primary, opacity: 0.15 },
-  dividerText: { fontFamily: 'Urbanist_800ExtraBold', color: COLORS.primary, opacity: 0.4, fontSize: 12, textAlign: 'center', width: 40 },
+  dividerText: { fontFamily: "Poppins_700Bold", color: COLORS.primary, opacity: 0.4, fontSize: 12, textAlign: 'center', width: 40 },
 
-  googleBtn: { backgroundColor: COLORS.surface, borderRadius: 16, paddingVertical: 18, alignItems: 'center', borderWidth: 1, borderColor: COLORS.border, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.03, shadowRadius: 8, elevation: 2 },
+  googleBtn: { backgroundColor: COLORS.surface, borderRadius: 0, paddingVertical: 18, alignItems: 'center', borderWidth: 3, borderColor: palette.ink, boxShadow: "4px 4px 0px 0px #111111" },
   googleBtnContent: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
-  googleIcon: { marginRight: 10 },
-  googleBtnText: { fontFamily: 'Urbanist_800ExtraBold', color: COLORS.primary, fontSize: 16, letterSpacing: -0.3 },
+  googleIcon: { width: 20, height: 20, marginRight: 12 },
+  googleBtnText: { fontFamily: "Poppins_700Bold", color: COLORS.primary, fontSize: 16, letterSpacing: -0.3 },
 });

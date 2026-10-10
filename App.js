@@ -1,3 +1,6 @@
+import { COLORS, palette } from './src/design/theme';
+import { Silkscreen_400Regular } from '@expo-google-fonts/silkscreen/400Regular';
+import { Silkscreen_700Bold } from '@expo-google-fonts/silkscreen/700Bold';
 // App.js
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Platform, StatusBar } from 'react-native';
@@ -6,23 +9,13 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { onAuthStateChanged } from 'firebase/auth';
-import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context'; 
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // FONT & SPLASH SCREEN IMPORTS
 import * as SplashScreen from 'expo-splash-screen';
 import { useFonts } from 'expo-font';
-import { 
-  Poppins_400Regular, 
-  Poppins_700Bold, 
-  Poppins_900Black 
-} from '@expo-google-fonts/poppins';
-import { 
-  Urbanist_400Regular, 
-  Urbanist_500Medium,
-  Urbanist_600SemiBold, 
-  Urbanist_800ExtraBold 
-} from '@expo-google-fonts/urbanist';
-
+import { Poppins_400Regular } from '@expo-google-fonts/poppins/400Regular';
+import { Poppins_700Bold } from '@expo-google-fonts/poppins/700Bold';
 // IMPORT DB AND EXPO TOOLS HERE
 import { auth } from './firebase';
 import * as Notifications from 'expo-notifications';
@@ -31,7 +24,7 @@ import { pushSession } from './src/services/pushSession';
 import appConfig from './app.json';
 
 import HomeScreen from './src/screens/HomeScreen';
-import NotificationsScreen from './src/screens/NotificationsScreen'; 
+import NotificationsScreen from './src/screens/NotificationsScreen';
 import BrowseStack from './src/navigation/BrowseStack';
 import ReportScreen from './src/screens/ReportScreen';
 import ProfileStack from './src/navigation/ProfileStack';
@@ -58,15 +51,10 @@ Notifications.setNotificationHandler({
 
 const Tab = createBottomTabNavigator();
 const AuthStack = createStackNavigator();
-const HomeStackNav = createStackNavigator(); 
+const HomeStackNav = createStackNavigator();
 const SOSStackNav = createStackNavigator();
 
-const COLORS = {
-  primary: '#003459',       
-  background: '#F7DBA7',    
-  surface: '#FFFFFF',       
-  inactive: '#667479',      
-};
+
 
 function HomeStack() {
   return (
@@ -98,25 +86,24 @@ function RootNavigator({ user }) {
           screenOptions={({ route }) => ({
             headerShown: false,
             tabBarShowLabel: true,
+            tabBarIconStyle: { width: 40, height: 34 },
             tabBarActiveTintColor: COLORS.primary,
+            tabBarActiveBackgroundColor: palette.yellow,
             tabBarInactiveTintColor: COLORS.inactive,
             tabBarStyle: {
               backgroundColor: COLORS.surface,
-              borderTopWidth: 0,
-              elevation: 24,
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: -6 },
-              shadowOpacity: 0.08,
-              shadowRadius: 16,
-              height: 65 + insets.bottom, 
-              paddingBottom: insets.bottom || 10, 
+              borderTopWidth: 3,
+              borderTopColor: palette.ink,
+              elevation: 0,
+              height: 65 + insets.bottom,
+              paddingBottom: insets.bottom || 10,
               paddingTop: 12,
             },
-            tabBarLabelStyle: { 
-              fontSize: 11, 
-              marginTop: 4, 
+            tabBarLabelStyle: {
+              fontSize: 9,
+              marginTop: 4,
               letterSpacing: -0.2,
-              fontFamily: 'Urbanist_800ExtraBold' // 🚀 Using Urbanist for tabs!
+              fontFamily: 'Silkscreen_700Bold'
             },
             tabBarIcon: ({ focused, color }) => {
               const icons = {
@@ -126,7 +113,7 @@ function RootNavigator({ user }) {
                 'SOS Feed': focused ? 'radar'            : 'radar',
                 Profile:   focused ? 'account-circle'    : 'account-circle-outline',
               };
-              return <MaterialCommunityIcons name={icons[route.name]} size={28} color={color} />;
+              return <View style={{ width: 40, height: 34, alignItems: 'center', justifyContent: 'center', borderWidth: focused ? 2 : 0, borderColor: palette.ink, backgroundColor: focused ? palette.mint : 'transparent' }}><MaterialCommunityIcons name={icons[route.name]} size={23} color={color} /></View>;
             },
           })}
         >
@@ -153,13 +140,10 @@ export default function App() {
 
   // 🚀 Load the Fonts
   let [fontsLoaded, fontError] = useFonts({
+    Silkscreen_400Regular,
+    Silkscreen_700Bold,
     Poppins_400Regular,
     Poppins_700Bold,
-    Poppins_900Black,
-    Urbanist_400Regular,
-    Urbanist_500Medium,
-    Urbanist_600SemiBold,
-    Urbanist_800ExtraBold,
   });
 
   useEffect(() => {
@@ -174,7 +158,7 @@ export default function App() {
     pushSession.activate(user?.uid || null);
     let cancelled = false;
     async function registerForPushNotificationsAsync() {
-      if (!user) return; 
+      if (!user) return;
       try {
         if (Device.isDevice) {
           if (Platform.OS === 'android') {

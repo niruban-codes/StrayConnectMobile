@@ -1,250 +1,60 @@
-// src/screens/WelcomeScreen.js
-import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, StatusBar, Image, Animated } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context'; 
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-
-// 🎨 "MONITO" COLOR PALETTE
-const COLORS = {
-  primary: '#003459',       // Dark Blue
-  secondary: '#F7DBA7',     // Mon Yellow
-  background: '#FDFDFD',    // Neutral 00
-  surface: '#FFFFFF',       // Pure White
-  pinkRed: '#FF564F',
-};
+import React, { useState } from 'react';
+import { View, Text, ScrollView, StyleSheet, StatusBar, Pressable } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { palette, fonts, frame, hardShadow } from '../design/theme';
+import ArcadeButton from '../components/ArcadeButton';
+import CompanionAvatar from '../components/CompanionAvatar';
+import { COMPANIONS } from '../components/companionScene';
 
 export default function WelcomeScreen({ navigation }) {
-  const insets = useSafeAreaInsets(); 
-
-  // Animation Values
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(40)).current;
-
-  useEffect(() => {
-    // Trigger smooth fade and slide up on mount
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 1000,
-        useNativeDriver: true,
-      }),
-      Animated.spring(slideAnim, {
-        toValue: 0,
-        tension: 40,
-        friction: 8,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, []);
-
-  return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-
-      {/* Cinematic Background Image */}
-      <Image
-        source={{ uri: 'https://images.unsplash.com/photo-1548199973-03cce0bbc87b?q=80&w=1000&auto=format&fit=crop' }} 
-        style={styles.backgroundImage}
-      />
-
-      {/* The Magic Gradient: 
-        Transparent at the top so the photo is clear.
-        Fades to our deep Monito Primary Blue at the bottom for perfect text readability.
-      */}
-      <LinearGradient
-        colors={['transparent', 'rgba(0, 52, 89, 0.6)', '#003459']}
-        locations={[0, 0.4, 1]}
-        style={styles.gradientOverlay}
-      />
-
-      {/* 🚀 FIXED CONTAINER WITH MANUAL INSETS */}
-      <View style={[
-        styles.safe, 
-        { 
-          paddingTop: Math.max(insets.top, 16), 
-          paddingBottom: Math.max(insets.bottom, 24) 
-        }
-      ]}>
-        {/* Animated Wrapper for all content */}
-        <Animated.View style={[styles.content, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-          
-          {/* Top Branding */}
-          <View style={styles.brandContainer}>
-            <View style={styles.iconGlow}>
-              {/* 🚀 LOGO ADDED HERE */}
-              <Image 
-                source={require('../../assets/images/sc-logo.png')} 
-                style={styles.logoImage} 
-              />
-            </View>
-            <Text style={styles.brandText}>StrayConnect</Text>
-          </View>
-
-          {/* Bottom Content Area */}
-          <View style={styles.actionSection}>
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>Sri Lanka's Rescue Network</Text>
-            </View>
-            
-            <Text style={styles.title}>Every stray deserves a story.</Text>
-            <Text style={styles.subtitle}>
-              Join the community. Report animals in need, find your new best friend, and track your local impact.
-            </Text>
-
-            <View style={styles.buttonContainer}>
-              <TouchableOpacity
-                style={styles.primaryBtn}
-                onPress={() => navigation.navigate('Signup')}
-                activeOpacity={0.85}
-              >
-                <Text style={styles.primaryBtnText}>Get Started</Text>
-                <MaterialCommunityIcons name="arrow-right" size={20} color={COLORS.primary} />
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.secondaryBtn}
-                onPress={() => navigation.navigate('Login')}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.secondaryBtnText}>I already have an account</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-        </Animated.View>
-      </View>
-    </View>
-  );
+  const insets = useSafeAreaInsets();
+  const [selected, setSelected] = useState(0);
+  const companion = COMPANIONS[selected];
+  return <View style={styles.screen}>
+    <StatusBar barStyle="dark-content" />
+    <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 28 }]}>
+      <View style={styles.brand}><Text style={styles.logo}>STRAY{'\n'}CONNECT</Text><Text style={styles.tag}>CARE.{'\n'}CONNECT.{'\n'}REPEAT.</Text></View>
+      <Pressable accessibilityRole="button"
+        accessibilityLabel={`${companion.name}, ${companion.id}. ${companion.mood}. Companion ${selected + 1} of ${COMPANIONS.length}`}
+        accessibilityHint="Tap to meet the next companion"
+        onPress={() => setSelected(value => (value + 1) % COMPANIONS.length)}
+        style={({ pressed }) => [styles.console, { backgroundColor: companion.color }, pressed && styles.consolePressed]}>
+        <View style={styles.consoleHeader}><Text style={styles.kicker}>MEET YOUR HAPPY PLACE</Text><Text style={styles.player}>{String(selected + 1).padStart(2, '0')} / 04</Text></View>
+        <View style={styles.stage}><CompanionAvatar size={230} selected={selected} /></View>
+        <View style={styles.identity}><Text style={styles.petName}>{companion.name}</Text><Text style={styles.mood}>{companion.mood}</Text></View>
+        <View style={styles.consoleFooter}>
+          <Text style={styles.kicker}>TAP TO MEET A FRIEND →</Text>
+          <View style={styles.dots}>{COMPANIONS.map((pet, index) => <View key={pet.id} style={[styles.dot, index === selected && styles.dotActive]} />)}</View>
+        </View>
+      </Pressable>
+      <Text style={styles.title}>SMALL PAWS.{'\n'}BIG MISSION.</Text>
+      <Text style={styles.description}>Every stray deserves a safe place. Find a friend, report an animal in need, and make care count.</Text>
+      <ArcadeButton color={palette.pink} onPress={() => navigation.navigate('Signup')}>LET'S GET STARTED →</ArcadeButton>
+      <ArcadeButton color={palette.paper} onPress={() => navigation.navigate('Login')}>LOG IN</ArcadeButton>
+      <Text style={styles.footer}>SRI LANKA'S ANIMAL RESCUE COMMUNITY</Text>
+    </ScrollView>
+  </View>;
 }
-
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    backgroundColor: '#000' 
-  },
-  backgroundImage: { 
-    position: 'absolute', 
-    width: '100%', 
-    height: '100%', 
-    opacity: 0.85 
-  },
-  gradientOverlay: { 
-    position: 'absolute', 
-    width: '100%', 
-    height: '100%', 
-  },
-  safe: { 
-    flex: 1 
-  },
-  content: { 
-    flex: 1, 
-    justifyContent: 'space-between', 
-    paddingHorizontal: 24, 
-  },
-  
-  // Branding
-  brandContainer: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    gap: 12, 
-    marginTop: 20 
-  },
-  iconGlow: {
-    padding: 10,
-    backgroundColor: 'rgba(247, 219, 167, 0.15)', // Faint yellow glow
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(247, 219, 167, 0.3)',
-  },
-  // 🚀 New Logo Style
-  logoImage: {
-    width: 32,
-    height: 32,
-    resizeMode: 'contain',
-    borderRadius: 6,
-  },
-  brandText: { 
-    fontFamily: 'Poppins_900Black', // 🚀 Font Update
-    fontSize: 26, 
-    color: '#fff', 
-    letterSpacing: -0.5 
-  },
-  
-  // Action Section
-  actionSection: { 
-    gap: 16 
-  },
-  badge: {
-    alignSelf: 'flex-start',
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
-    marginBottom: 8,
-  },
-  badgeText: {
-    fontFamily: 'Urbanist_800ExtraBold', // 🚀 Font Update
-    color: COLORS.secondary,
-    fontSize: 12,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-  },
-  title: { 
-    fontFamily: 'Poppins_900Black', // 🚀 Font Update
-    fontSize: 48, 
-    color: '#fff', 
-    letterSpacing: -1.5, 
-    lineHeight: 52, 
-    marginBottom: 4 
-  },
-  subtitle: { 
-    fontFamily: 'Urbanist_500Medium', // 🚀 Font Update
-    fontSize: 16, 
-    color: 'rgba(255,255,255,0.8)', 
-    lineHeight: 24, 
-    marginBottom: 32,
-    paddingRight: 20, 
-  },
-  
-  // Buttons
-  buttonContainer: { 
-    gap: 14 
-  },
-  primaryBtn: { 
-    backgroundColor: COLORS.secondary, 
-    borderRadius: 16, 
-    paddingVertical: 20, 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    justifyContent: 'center', 
-    gap: 10,
-    shadowColor: COLORS.secondary,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.4,
-    shadowRadius: 16,
-    elevation: 8,
-  },
-  primaryBtnText: { 
-    fontFamily: 'Urbanist_800ExtraBold', // 🚀 Font Update
-    color: COLORS.primary, 
-    fontSize: 18, 
-    letterSpacing: -0.3
-  },
-  secondaryBtn: { 
-    backgroundColor: 'transparent', 
-    borderRadius: 16, 
-    paddingVertical: 18, 
-    alignItems: 'center', 
-    justifyContent: 'center', 
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)'
-  },
-  secondaryBtnText: { 
-    fontFamily: 'Urbanist_800ExtraBold', // 🚀 Font Update
-    color: '#fff', 
-    fontSize: 16, 
-  },
+  screen: { flex: 1, backgroundColor: palette.yellow },
+  content: { flexGrow: 1, paddingHorizontal: 24, gap: 18 },
+  brand: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
+  logo: { fontFamily: fonts.title, fontSize: 22, lineHeight: 25, color: palette.ink },
+  tag: { fontFamily: fonts.bold, fontSize: 9, textAlign: 'right', lineHeight: 14 },
+  console: { ...frame, ...hardShadow, backgroundColor: palette.mint },
+  consolePressed: { transform: [{ translateX: 2 }, { translateY: 2 }], boxShadow: '2px 2px 0px 0px #111111' },
+  consoleHeader: { borderBottomWidth: 3, borderColor: palette.ink, padding: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  kicker: { fontFamily: fonts.pixel, fontSize: 10, flexShrink: 1, color: palette.ink },
+  stage: { justifyContent: 'center', alignItems: 'center', height: 230 },
+  identity: { alignItems: 'center', paddingBottom: 14, gap: 2 },
+  petName: { fontFamily: fonts.title, fontSize: 18, color: palette.ink },
+  mood: { fontFamily: fonts.body, fontSize: 12, color: palette.ink },
+  dots: { flexDirection: 'row', gap: 4 },
+  dot: { width: 8, height: 8, borderWidth: 1.5, borderColor: palette.ink },
+  dotActive: { backgroundColor: palette.ink },
+  consoleFooter: { borderTopWidth: 3, borderColor: palette.ink, padding: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: palette.paper },
+  player: { fontFamily: fonts.title, fontSize: 15 },
+  title: { fontFamily: fonts.title, fontSize: 27, lineHeight: 34, marginTop: 8, color: palette.ink },
+  description: { fontFamily: fonts.body, fontSize: 13, lineHeight: 21, color: palette.ink },
+  footer: { fontFamily: fonts.pixel, fontSize: 9, textAlign: 'center', marginTop: 5, color: palette.ink },
 });

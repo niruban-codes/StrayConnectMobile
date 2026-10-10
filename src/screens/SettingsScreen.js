@@ -1,3 +1,4 @@
+import { COLORS as ARCADE_COLORS, palette } from '../design/theme';
 // src/screens/SettingsScreen.js
 import React, { useState, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, StatusBar, Image, Alert } from 'react-native';
@@ -6,13 +7,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { pushSession } from '../services/pushSession';
 import { auth } from '../../firebase';
 
-const COLORS = {
-  primary: '#003459',
-  background: '#F7DBA7',
-  surface: '#FFFFFF',
-  textDark: '#00171F',
-  pinkRed: '#FF564F',
-};
+const COLORS = { ...ARCADE_COLORS, background: palette.purple };
 
 export default function SettingsScreen({ navigation }) {
   const insets = useSafeAreaInsets();
@@ -32,7 +27,7 @@ export default function SettingsScreen({ navigation }) {
   return (
     <View style={styles.safe}>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent={true} />
-      <Image source={require('../../assets/images/app-bg.png')} style={styles.bgPattern} />
+
 
       <View style={[styles.header, { paddingTop: insets.top }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
@@ -54,11 +49,10 @@ export default function SettingsScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: COLORS.background },
-  bgPattern: { position: 'absolute', width: '100%', height: '100%', opacity: 0.15 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, height: 80 },
-  headerTitle: { fontFamily: 'Poppins_900Black', fontSize: 20, color: COLORS.primary },
-  backBtn: { padding: 8, backgroundColor: 'rgba(255,255,255,0.6)', borderRadius: 12 },
+  headerTitle: { fontFamily: "Silkscreen_700Bold", fontSize: 16, color: COLORS.primary, letterSpacing: 0 },
+  backBtn: { padding: 8, backgroundColor: palette.paper, borderRadius: 0, borderWidth: 3, borderColor: palette.ink },
   content: { padding: 20 },
-  signOutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: COLORS.surface, padding: 16, borderRadius: 16, borderWidth: 1, borderColor: '#FFEBEE' },
-  signOutText: { fontFamily: 'Urbanist_800ExtraBold', fontSize: 16, color: COLORS.pinkRed },
+  signOutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: COLORS.surface, padding: 16, borderRadius: 0, borderWidth: 3, borderColor: palette.ink },
+  signOutText: { fontFamily: "Poppins_700Bold", fontSize: 16, color: COLORS.pinkRed },
 });
