@@ -1,4 +1,6 @@
 import { COLORS as ARCADE_COLORS, palette } from '../design/theme';
+import PhotoPreview from '../components/PhotoPreview';
+import UserAvatar from '../components/UserAvatar';
 import { useFeedStatus } from '../hooks/useFeedStatus';
 import FeedError from '../components/FeedError';
 // src/screens/ProfileScreen.js
@@ -41,6 +43,11 @@ export default function ProfileScreen({ navigation }) {
   const [loadingPets, setLoadingPets] = useState(true);
 
   const user = auth.currentUser;
+  const [profile, setProfile] = useState(null);
+  useEffect(() => {
+    if (!user) return;
+    return onSnapshot(doc(db, 'users', user.uid), snapshot => setProfile(snapshot.data() || {}), failFeed);
+  }, [user?.uid, retryKey, failFeed]);
   const [isVerified, refreshVerification] = useVerifiedEmail();
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -215,9 +222,7 @@ export default function ProfileScreen({ navigation }) {
           <View style={styles.profileSection}>
             <View style={styles.avatarContainer}>
               <View style={styles.avatar}>
-                <Text style={styles.avatarText}>
-                  {user?.displayName ? user.displayName.charAt(0).toUpperCase() : 'U'}
-                </Text>
+                <UserAvatar avatarId={profile?.avatarId} name={profile?.name || user?.displayName || 'U'} size={90} />
               </View>
               {isVerified && (
                 <View style={styles.verifiedDot}>
@@ -226,7 +231,7 @@ export default function ProfileScreen({ navigation }) {
               )}
             </View>
 
-            <Text style={styles.userName}>{user?.displayName || 'Community Member'}</Text>
+            <Text style={styles.userName}>{profile?.name || user?.displayName || 'Community Member'}</Text>
             <Text style={styles.userEmail}>{user?.email || 'No email'}</Text>
 
             {!isVerified && <TouchableOpacity style={styles.unverifiedBadge} onPress={async () => {
@@ -276,11 +281,13 @@ export default function ProfileScreen({ navigation }) {
             </View>
           ) : (
             userPets.map((pet) => (
-              <View key={pet.id} style={styles.passportCard}>
+              <TouchableOpacity key={pet.id} style={styles.passportCard} activeOpacity={0.9}
+                accessibilityRole="button" accessibilityLabel={`Open ${pet.name || 'pet'}'s animal profile`}
+                onPress={() => navigation.navigate('Browse', { screen: 'AnimalDetail', params: { animal: pet } })}>
                 <View style={styles.passportHeader}>
                   <View style={styles.passportImageContainer}>
                     {pet.imageUrl ? (
-                      <Image source={{ uri: pet.imageUrl }} style={styles.passportImage} />
+                      <PhotoPreview uri={pet.imageUrl} style={styles.passportImage} />
                     ) : (
                       <MaterialCommunityIcons name="paw" size={28} color={COLORS.textMuted} />
                     )}
@@ -340,7 +347,7 @@ export default function ProfileScreen({ navigation }) {
                     </TouchableOpacity>
                   )}
                 </View>
-              </View>
+              </TouchableOpacity>
             ))
           )}
 

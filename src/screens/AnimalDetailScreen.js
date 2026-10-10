@@ -1,4 +1,5 @@
 import { COLORS as ARCADE_COLORS, palette } from '../design/theme';
+import PhotoPreview from '../components/PhotoPreview';
 import PassportStatus from '../components/PassportStatus';
 // src/screens/AnimalDetailScreen.js
 import React, { useState, useEffect, useRef } from 'react';
@@ -183,15 +184,15 @@ export default function AnimalDetailScreen({ route, navigation }) {
       {/* 🌟 FULL-BLEED HERO IMAGE */}
       <View style={styles.heroContainer}>
         {animal.imageUrl ? (
-          <Image source={{ uri: animal.imageUrl }} style={styles.heroImage} />
+          <PhotoPreview uri={animal.imageUrl} style={styles.heroImage} />
         ) : (
           <View style={[styles.heroImage, styles.heroPlaceholder]}>
             <MaterialCommunityIcons name="paw" size={64} color={COLORS.border} />
           </View>
         )}
-        <View style={styles.heroOverlay} />
+        <View pointerEvents="none" style={styles.heroOverlay} />
 
-        <View style={[styles.header, { paddingTop: Math.max(insets.top, 16) }]}>
+        <View pointerEvents="box-none" style={[styles.header, { paddingTop: Math.max(insets.top, 16) }]}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
             <MaterialCommunityIcons name="arrow-left" size={24} color={COLORS.primary} />
           </TouchableOpacity>

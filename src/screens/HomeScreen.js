@@ -202,7 +202,9 @@ export default function HomeScreen({ navigation }) {
               horizontal
               showsHorizontalScrollIndicator={false}
               keyExtractor={item => item.id}
-              contentContainerStyle={{ paddingRight: 20, paddingBottom: 20 }}
+              style={styles.carousel}
+              contentContainerStyle={styles.carouselContent}
+              ItemSeparatorComponent={() => <View style={{ width: 16 }} />}
               renderItem={({ item }) => {
                 const eventDate = eventStart(item);
                 const month = eventDate.toLocaleString('en-GB', { month: 'short', timeZone: 'Asia/Colombo' });
@@ -253,7 +255,9 @@ export default function HomeScreen({ navigation }) {
               horizontal
               showsHorizontalScrollIndicator={false}
               keyExtractor={item => item.id}
-              contentContainerStyle={{ paddingRight: 20, paddingBottom: 20 }}
+              style={styles.carousel}
+              contentContainerStyle={styles.carouselContent}
+              ItemSeparatorComponent={() => <View style={{ width: 16 }} />}
               renderItem={({ item }) => {
                 const sc = statusColor(item.status);
                 return (
@@ -368,7 +372,10 @@ const styles = StyleSheet.create({
   emptyState: { alignItems: 'center', paddingVertical: 32, gap: 8, marginBottom: 24, backgroundColor: palette.paper, borderRadius: 0, borderWidth: 3, borderColor: palette.ink },
   emptyText: { fontFamily: "Poppins_700Bold", color: COLORS.textMuted, fontSize: 13 },
 
-  card: { width: 180, backgroundColor: COLORS.surface, borderRadius: 0, marginRight: 16, borderWidth: 3, borderColor: palette.ink, boxShadow: "4px 4px 0px 0px #111111" },
+  // Let cards scroll to the screen edges; keep the inset inside the scrollable content.
+  carousel: { marginHorizontal: -20 },
+  carouselContent: { paddingHorizontal: 20, paddingBottom: 20 },
+  card: { width: 180, backgroundColor: COLORS.surface, borderRadius: 0, borderWidth: 3, borderColor: palette.ink, boxShadow: "4px 4px 0px 0px #111111" },
   cardImageContainer: { width: '100%', height: 160, padding: 8 },
   cardImage: { width: '100%', height: '100%', borderRadius: 0, resizeMode: 'cover' },
   placeholderBg: { backgroundColor: COLORS.surfaceOff, alignItems: 'center', justifyContent: 'center' },
